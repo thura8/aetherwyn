@@ -8,6 +8,7 @@ A local-multiplayer wizard duel game. The big screen is the arena; each player's
 
 - [Next.js 16](https://nextjs.org) (App Router) + React 19
 - TypeScript 6 (strict)
+- [Tailwind CSS 4](https://tailwindcss.com), without Preflight
 - [three.js](https://threejs.org) for 3D
 - pnpm for packages
 - ESLint 9
@@ -44,18 +45,34 @@ Then open http://localhost:3000.
 ```text
 src/
   app/
-    layout.tsx        root HTML layout, self-hosted fonts
-    page.tsx          title screen page
-    globals.css       colour palette and title screen styles
-  components/
-    TitleScene.tsx    mounts the title screen markup and starts/stops the game code
-  game/
-    menu.js           screens, buttons, sound, keyboard/gamepad, lobby and training logic
-    world.js          the three.js world: arena, islands, castles, portal, effects, post-processing
-    realism.js        procedural rock, island and stone textures, triplanar material patch
+    layout.tsx            root HTML layout, self-hosted fonts
+    page.tsx              entry point; renders the canvas and every screen, then starts the experience
+    loading.tsx           first-paint loading screen (route Suspense fallback)
+    globals.css           Tailwind imports, theme tokens, shared component classes
+  components/             screen markup, the shared button, the loading screen and its styles
+  experience/
+    startExperience.ts    wires everything up and returns a stop function
+    experienceContext.ts  shared state and services, plus the element lookup helper
+    frameLoop.ts          per-frame loop
+    lifecycle.ts          tracks listeners and timers so they can all be released
+    device.ts             device capabilities and quality tier
+    adaptiveQuality.ts    adjusts render quality to the frame rate
+    loadingOverlay.ts     drives the loading screen's progress, tips and reveal
+    cameraDirector.ts     camera shots and transitions
+    soundEngine.ts        synthesised sound and music
+    keyboardAndGamepad.ts keyboard and gamepad input
+    menuFeedback.ts       menu hover, press and ripple feedback
+    screens/              screen navigation, lobby, join form, training
+    world/                the three.js world; createWorld.ts builds it in order
 ```
 
-The game code in `src/game` is plain JavaScript ported from the prototype. It will get TypeScript types in a later step.
+React renders the markup and its props never change. The code in `src/experience` then updates those elements directly by `id`, so keep the screen components stateless, and keep ids and state class names (such as `.out` or `.bump`) in sync with that code.
+
+The world layout comes from one seeded random sequence, so reordering the builders in `createWorld.ts` changes how the world looks.
+
+## Styling
+
+Layout and typography use Tailwind utilities in the components. Anything with pseudo-elements, keyframes or classes toggled by `src/experience` stays as CSS in `@layer components`. Palette and fonts are defined in `@theme` in `globals.css`. Preflight is left out on purpose, because the UI is tuned against browser default styles.
 
 ## Quality settings
 

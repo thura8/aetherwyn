@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import "@fontsource/cinzel-decorative/700.css";
 import "@fontsource/cinzel-decorative/900.css";
 import "@fontsource/cinzel/500.css";
 import "@fontsource/cinzel/600.css";
@@ -11,7 +10,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Aetherwyn",
-  description: "A local-multiplayer wizard duel. The big screen is the arena; your phone is your wand.",
+  description:
+    "A local-multiplayer wizard duel. The big screen is the arena; your phone is your wand.",
 };
 
 export const viewport: Viewport = {

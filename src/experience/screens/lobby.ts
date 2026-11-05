@@ -1,0 +1,161 @@
+import qrcode from "qrcode-generator";
+import { elementById, type ExperienceContext, type Room } from "../experienceContext";
+import { CIRCLE_COLORS } from "../world/arena";
+import type { ScreenNavigator } from "./screenNavigator";
+
+/** Room codes leave out 0, O, 1 and I, which are easy to misread on a big screen. */
+export const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const TEST_WIZARDS = [
+  ["Lyra", "The Mystic"],
+  ["Thorne", "The Elemental Mage"],
+  ["Isolde", "The Guardian"],
+  ["Corvin", "The Arcane Scholar"],
+  ["Seren", "The Mystic"],
+  ["Bram", "The Guardian"],
+];
+
+const toCssHex = (color: number) => "#" + color.toString(16).padStart(6, "0");
+
+function generateRoomCode() {
+  let code = "";
+  const values = new Uint32Array(4);
+  crypto.getRandomValues(values);
+  for (let i = 0; i < 4; i++)
+    code += ROOM_CODE_ALPHABET[values[i] % ROOM_CODE_ALPHABET.length];
+  return code;
+}
+
+function renderQrCode(text: string) {
+  const box = elementById("qr");
+  const code = qrcode(0, "M");
+  code.addData(text);
+  code.make();
+  box.innerHTML = code.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
+  box
+    .querySelector("svg")
+    ?.querySelectorAll("path, rect")
+    .forEach((shape) => {
+      const fill = shape.getAttribute("fill");
+      if (fill === "#000000" || fill === "black")
+        shape.setAttribute("fill", "#1D2C55");
+    });
+}
+
+export function setUpLobby(
+  context: ExperienceContext,
+  screenNavigator: ScreenNavigator,
+) {
+  const { lifecycle, sound } = context;
+  let testWizardCount = 0;
+
+  function renderSlots(room: Room) {
+    const list = elementById("slots");
+    list.innerHTML = "";
+    room.players.forEach((player, i) => {
+      const slot = document.createElement("li");
+      slot.className = "slot " + (player ? "filled" : "empty");
+      slot.style.setProperty("--c", toCssHex(CIRCLE_COLORS[i]));
+      slot.innerHTML = `<span class="sig" aria-hidden="true"></span><span class="who"><span class="name"></span><span class="cls"></span></span><span class="end"></span>`;
+      slot.querySelector(".name")!.textContent = player
+        ? player.name
+        : "Waiting for a wand…";
+      slot.querySelector(".cls")!.textContent = player
+        ? player.wizardClass
+        : `Casting circle ${i + 1}`;
+      if (player) {
+        const pill = document.createElement("span");
+        pill.className = "pill";
+        pill.textContent = player.isTestWizard ? "Test wand" : "Wand connected";
+        const removeButton = document.createElement("button");
+        removeButton.className = "x";
+        removeButton.type = "button";
+        removeButton.textContent = "×";
+        removeButton.setAttribute("aria-label", `Remove ${player.name}`);
+        removeButton.addEventListener("click", () => {
+          room.players[i] = null;
+          sound.back();
+          context.showToast(`${player.name} left the circle.`);
+          refreshLobby();
+        });
+        slot.querySelector(".end")!.append(pill, removeButton);
+      }
+      if (!player || !player.isNew) slot.style.animation = "none";
+      if (player) player.isNew = false;
+      list.appendChild(slot);
+    });
+  }
+
+  function refreshLobby() {
+    const room = context.room;
+    if (!room) return;
+    renderSlots(room);
+    const seatedCount = room.players.filter(Boolean).length;
+    elementById<HTMLButtonElement>("begin").disabled = seatedCount === 0;
+    elementById("begin-reason").textContent =
+      seatedCount === 0
+        ? "Waiting for at least one wizard."
+        : seatedCount === 1
+          ? "1 wizard ready. A duel needs 2; training works with 1."
+          : `${seatedCount} wizards ready.`;
+    elementById<HTMLButtonElement>("add-test").disabled = seatedCount >= 4;
+    if (context.world && context.screen === "lobby")
+      context.world.setCirclesLit(room.players.map(Boolean));
+  }
+
+  /** Seats a player in the first free circle. Returns the circle's index, or -1 when the room is full. */
+  function seatPlayer(
+    name: string,
+    wizardClass: string,
+    isTestWizard: boolean,
+  ) {
+    const room = context.room;
+    if (!room) return -1;
+    const index = room.players.findIndex((player) => !player);
+    if (index < 0) return -1;
+    room.players[index] = { name, wizardClass, isTestWizard, isNew: true };
+    if (context.world && context.screen === "lobby")
+      context.world.circles[index].flashTime = context.world.state.time;
+    sound.ignite();
+    return index;
+  }
+
+  screenNavigator.onEnter.lobby = () => {
+    if (!context.room) {
+      context.room = {
+        code: generateRoomCode(),
+        players: [null, null, null, null],
+      };
+      if (context.world) {
+        context.world.triggerShockwave(0.8);
+        context.world.state.orbTarget = 1.6;
+        lifecycle.after(() => {
+          if (context.world) context.world.state.orbTarget = 1;
+        }, 900);
+      }
+      sound.surge();
+    }
+    elementById("room-code").textContent = context.room.code;
+    renderQrCode(`https://aetherwyn.local/join?code=${context.room.code}`);
+    refreshLobby();
+  };
+
+  lifecycle.listen(elementById("add-test"), "click", () => {
+    if (!context.room) return;
+    const [name, wizardClass] =
+      TEST_WIZARDS[testWizardCount++ % TEST_WIZARDS.length];
+    if (seatPlayer(name, wizardClass, true) >= 0) {
+      context.showToast(`${name} entered the realm.`);
+      refreshLobby();
+    }
+  });
+  lifecycle.listen(elementById("begin"), "click", () =>
+    screenNavigator.goTo("training"),
+  );
+  lifecycle.listen(elementById("close-room"), "click", () => {
+    context.room = null;
+    context.showToast("Room closed.");
+    screenNavigator.goTo("title");
+  });
+
+  return { seatPlayer };
+}
