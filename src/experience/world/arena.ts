@@ -24,7 +24,7 @@ export const CIRCLE_COLORS = [0x9f6bff, 0x7fe8ff, 0xffd27a, 0x5ff0c8];
 
 const ADDITIVE = THREE.AdditiveBlending;
 const PLATFORM_Y = 1.6;
-const ORB_Y = 8;
+export const ORB_Y = 8;
 const ARC_POINT_COUNT = 28;
 
 export interface CastingCircle {

@@ -1,4 +1,8 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import {
+  WIZARD_CLASSES,
+  WIZARD_CLASS_IDS,
+} from "../experience/world/characters/wizardClasses";
 import MagicButton from "./MagicButton";
 
 function FormField({
@@ -62,6 +66,26 @@ export default function JoinScreen() {
             placeholder="Lyra"
           />
         </FormField>
+        <fieldset className="class-pick">
+          <legend className="font-label text-[0.7rem] tracking-[0.26em] text-lavender uppercase">
+            Character
+          </legend>
+          {WIZARD_CLASS_IDS.map((classId, index) => (
+            <label
+              key={classId}
+              style={{ "--k": WIZARD_CLASSES[classId].swatch } as CSSProperties}
+            >
+              <input
+                type="radio"
+                name="wizard-class"
+                value={classId}
+                defaultChecked={index === 0}
+              />
+              <i aria-hidden="true" />
+              {WIZARD_CLASSES[classId].name.replace("The ", "")}
+            </label>
+          ))}
+        </fieldset>
         <p
           className="min-h-[1.3em] text-[1rem] text-danger"
           id="join-error"

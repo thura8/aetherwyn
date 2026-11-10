@@ -9,6 +9,7 @@ import {
   type WorldState,
 } from "./buildContext";
 import { createGlowTexture } from "./canvasTextures";
+import { buildWizards } from "./characters/wizards";
 import { createIslandFactory } from "./islands";
 import { createWaterfallMaterial, createWorldMaterials } from "./materials";
 import { createRenderPipeline } from "./postProcessing";
@@ -217,6 +218,7 @@ export async function createWorld(
     portal.getPortalFrame,
     state,
   );
+  const wizards = buildWizards(context, arena.arena, arena.circles, state, camera);
 
   const lightFollowTarget = new THREE.Vector3();
   const lightOffset = new THREE.Vector3();
@@ -253,6 +255,7 @@ export async function createWorld(
     arena.updateOrb(frame);
     portal.update(frame, state);
     arena.updateShockwaveAndGlyphs(frame);
+    wizards.update(frame);
     updateDebris(frame);
     updateDragons(frame);
     updateSkyLife(frame);
@@ -288,6 +291,7 @@ export async function createWorld(
 
   function dispose() {
     pipeline.renderer.setAnimationLoop(null);
+    wizards.dispose();
     scene.traverse((object) => {
       const { geometry, material } = object as THREE.Mesh;
       if (geometry) geometry.dispose();
@@ -310,6 +314,7 @@ export async function createWorld(
 
   // compile every shader now, so the first frames don't stutter
   await reportProgress(0.9, "Awakening the magic");
+  wizards.prewarm();
   update(0);
   // warm up from the exact opening shot, so the first visible frame is the real view
   camera.position.set(
@@ -323,6 +328,7 @@ export async function createWorld(
     await pipeline.renderer.compileAsync(scene, camera);
   else pipeline.renderer.compile(scene, camera);
   pipeline.composer.render();
+  wizards.endPrewarm();
   await reportProgress(1, "Ready");
 
   return {
@@ -352,5 +358,8 @@ export async function createWorld(
     castBolt: training.castBolt,
     getAimRay: training.getAimRay,
     crystals: training.crystals,
+    setWizard: wizards.setWizard,
+    castWizardSpell: wizards.castSpell,
+    setWizardCastListener: wizards.setShowOffCastListener,
   };
 }

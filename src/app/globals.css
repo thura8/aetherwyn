@@ -675,6 +675,101 @@
     display: flex;
     align-items: center;
   }
+  .slot .classes {
+    display: flex;
+    gap: 7px;
+    margin-top: 6px;
+  }
+  .class-dot {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 1px solid rgba(237, 230, 255, 0.4);
+    background: radial-gradient(
+      circle at 35% 30%,
+      color-mix(in srgb, var(--k) 65%, white),
+      var(--k) 55%,
+      color-mix(in srgb, var(--k) 55%, black)
+    );
+    cursor: pointer;
+    opacity: 0.5;
+    transition:
+      opacity 0.2s,
+      box-shadow 0.2s,
+      transform 0.2s;
+  }
+  .class-dot:hover,
+  .class-dot:focus-visible {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  .class-dot:focus-visible {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 2px;
+  }
+  .class-dot[aria-pressed="true"] {
+    opacity: 1;
+    border-color: var(--color-gold-hi);
+    box-shadow:
+      0 0 0 2px rgba(250, 220, 152, 0.35),
+      0 0 12px var(--k);
+  }
+  .class-pick {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  .class-pick legend {
+    padding: 0;
+    margin-bottom: 6px;
+  }
+  .class-pick label {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    font-family: var(--font-label);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--color-ink-dim);
+    background: rgba(10, 12, 30, 0.5);
+    border: 1px solid rgba(159, 138, 207, 0.4);
+    border-radius: 2px;
+    cursor: pointer;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s,
+      color 0.2s;
+  }
+  .class-pick input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .class-pick i {
+    flex: none;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--k);
+    box-shadow: 0 0 8px var(--k);
+  }
+  .class-pick label:has(input:checked) {
+    color: var(--color-ink);
+    border-color: var(--k);
+    box-shadow: inset 0 0 18px color-mix(in srgb, var(--k) 28%, transparent);
+  }
+  .class-pick label:has(input:focus-visible) {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 2px;
+  }
   .btn-row .btn {
     flex: 1 1 160px;
     width: auto;

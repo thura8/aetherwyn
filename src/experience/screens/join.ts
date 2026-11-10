@@ -1,4 +1,8 @@
 import { elementById, type ExperienceContext } from "../experienceContext";
+import {
+  isWizardClassId,
+  type WizardClassId,
+} from "../world/characters/wizardClasses";
 import { ROOM_CODE_ALPHABET } from "./lobby";
 import type { ScreenNavigator } from "./screenNavigator";
 
@@ -8,6 +12,7 @@ export function setUpJoinForm(
   seatPlayer: (
     name: string,
     isTestWizard: boolean,
+    wizardClass?: WizardClassId,
   ) => number,
 ) {
   const { lifecycle, sound } = context;
@@ -66,7 +71,14 @@ export function setUpJoinForm(
         codeInput,
         "That realm is full. Four wizards are already in the circles.",
       );
-    seatPlayer(name, false);
+    const chosenClass = new FormData(
+      elementById<HTMLFormElement>("join-form"),
+    ).get("wizard-class");
+    seatPlayer(
+      name,
+      false,
+      isWizardClassId(chosenClass) ? chosenClass : undefined,
+    );
     sound.press();
     context.showToast(`${name} entered the realm.`);
     codeInput.value = "";

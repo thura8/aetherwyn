@@ -1,12 +1,15 @@
 import type { SoundEngine } from "./soundEngine";
 import type { DeviceProfile } from "./device";
 import type { Lifecycle } from "./lifecycle";
+import type { WizardClassId } from "./world/characters/wizardClasses";
 import type { World } from "./world/createWorld";
 
 export type ScreenName = "title" | "lobby" | "join" | "training";
 
 interface Player {
   name: string;
+  /** The character this player chose; it stands on their casting circle. */
+  wizardClass: WizardClassId;
   isTestWizard: boolean;
   /** True until the player's slot has played its entrance animation. */
   isNew: boolean;

@@ -30,7 +30,7 @@ export function setUpKeyboardAndGamepad(
     return screen
       ? [
           ...screen.querySelectorAll<HTMLElement>(
-            ".btn:not(:disabled), input, .x",
+            ".btn:not(:disabled), input, .x, .class-dot",
           ),
         ].filter((control) => control.offsetParent !== null)
       : [];
