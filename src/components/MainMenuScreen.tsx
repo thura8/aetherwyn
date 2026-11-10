@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import MagicButton from "./MagicButton";
+import { TitleOrnament, TitleWordmark } from "./TitleCrest";
 
 const staggerIndex = (index: number) => ({ "--i": index }) as CSSProperties;
 
@@ -10,26 +11,10 @@ export default function MainMenuScreen() {
       id="scr-title"
     >
       <header className="flex flex-col items-center gap-2.5 text-center">
-        <h1 className="title" aria-label="Aetherwyn">
-          {[..."AETHERWYN"].map((letter, index) => (
-            <span key={index} style={staggerIndex(index)} aria-hidden="true">
-              {letter}
-            </span>
-          ))}
+        <h1 className="title">
+          <TitleWordmark />
         </h1>
-        <svg className="ornament" viewBox="0 0 520 22" aria-hidden="true">
-          <path d="M8 11 H226 M294 11 H512" />
-          <path d="M226 11 C238 3, 246 3, 252 11 M294 11 C282 3, 274 3, 268 11" />
-          <path d="M40 15 H200 M320 15 H480" style={{ opacity: 0.5 }} />
-          <rect
-            className="gem"
-            x="253"
-            y="4"
-            width="14"
-            height="14"
-            transform="rotate(45 260 11)"
-          />
-        </svg>
+        <TitleOrnament />
         <p className="tagline m-0 font-label text-[clamp(0.72rem,1.6vw,0.95rem)] font-medium tracking-[0.42em] text-[#E4DAFF] uppercase [text-shadow:0_1px_2px_rgba(8,8,24,1),0_0_14px_rgba(8,8,24,0.95)] max-[480px]:tracking-[0.28em]">
           The Grand Duel awaits
         </p>
