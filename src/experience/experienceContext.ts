@@ -7,7 +7,6 @@ export type ScreenName = "title" | "lobby" | "join" | "training";
 
 interface Player {
   name: string;
-  wizardClass: string;
   isTestWizard: boolean;
   /** True until the player's slot has played its entrance animation. */
   isNew: boolean;

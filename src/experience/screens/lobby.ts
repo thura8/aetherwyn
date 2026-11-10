@@ -5,14 +5,7 @@ import type { ScreenNavigator } from "./screenNavigator";
 
 /** Room codes leave out 0, O, 1 and I, which are easy to misread on a big screen. */
 export const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const TEST_WIZARDS = [
-  ["Lyra", "The Mystic"],
-  ["Thorne", "The Elemental Mage"],
-  ["Isolde", "The Guardian"],
-  ["Corvin", "The Arcane Scholar"],
-  ["Seren", "The Mystic"],
-  ["Bram", "The Guardian"],
-];
+const TEST_WIZARD_NAMES = ["Lyra", "Thorne", "Isolde", "Corvin", "Seren", "Bram"];
 
 const toCssHex = (color: number) => "#" + color.toString(16).padStart(6, "0");
 
@@ -59,9 +52,7 @@ export function setUpLobby(
       slot.querySelector(".name")!.textContent = player
         ? player.name
         : "Waiting for a wand…";
-      slot.querySelector(".cls")!.textContent = player
-        ? player.wizardClass
-        : `Casting circle ${i + 1}`;
+      slot.querySelector(".cls")!.textContent = `Casting circle ${i + 1}`;
       if (player) {
         const pill = document.createElement("span");
         pill.className = "pill";
@@ -103,16 +94,12 @@ export function setUpLobby(
   }
 
   /** Seats a player in the first free circle. Returns the circle's index, or -1 when the room is full. */
-  function seatPlayer(
-    name: string,
-    wizardClass: string,
-    isTestWizard: boolean,
-  ) {
+  function seatPlayer(name: string, isTestWizard: boolean) {
     const room = context.room;
     if (!room) return -1;
     const index = room.players.findIndex((player) => !player);
     if (index < 0) return -1;
-    room.players[index] = { name, wizardClass, isTestWizard, isNew: true };
+    room.players[index] = { name, isTestWizard, isNew: true };
     if (context.world && context.screen === "lobby")
       context.world.circles[index].flashTime = context.world.state.time;
     sound.ignite();
@@ -141,9 +128,9 @@ export function setUpLobby(
 
   lifecycle.listen(elementById("add-test"), "click", () => {
     if (!context.room) return;
-    const [name, wizardClass] =
-      TEST_WIZARDS[testWizardCount++ % TEST_WIZARDS.length];
-    if (seatPlayer(name, wizardClass, true) >= 0) {
+    const name =
+      TEST_WIZARD_NAMES[testWizardCount++ % TEST_WIZARD_NAMES.length];
+    if (seatPlayer(name, true) >= 0) {
       context.showToast(`${name} entered the realm.`);
       refreshLobby();
     }

@@ -2,19 +2,11 @@ import { elementById, type ExperienceContext } from "../experienceContext";
 import { ROOM_CODE_ALPHABET } from "./lobby";
 import type { ScreenNavigator } from "./screenNavigator";
 
-const WIZARD_CLASSES = [
-  "The Elemental Mage",
-  "The Guardian",
-  "The Mystic",
-  "The Arcane Scholar",
-];
-
 export function setUpJoinForm(
   context: ExperienceContext,
   screenNavigator: ScreenNavigator,
   seatPlayer: (
     name: string,
-    wizardClass: string,
     isTestWizard: boolean,
   ) => number,
 ) {
@@ -74,8 +66,7 @@ export function setUpJoinForm(
         codeInput,
         "That realm is full. Four wizards are already in the circles.",
       );
-    const wizardClass = WIZARD_CLASSES[room.players.filter(Boolean).length % 4];
-    seatPlayer(name, wizardClass, false);
+    seatPlayer(name, false);
     sound.press();
     context.showToast(`${name} entered the realm.`);
     codeInput.value = "";
