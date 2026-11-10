@@ -616,6 +616,44 @@
       0 0 14px var(--c),
       inset 0 0 8px var(--c);
   }
+  /* A phone that dropped off: dimmed, with a ring draining over the seconds it has to return. */
+  .slot.lost {
+    border-color: rgba(255, 156, 138, 0.45);
+    background: rgba(29, 44, 85, 0.3);
+    box-shadow: none;
+  }
+  .slot.lost .who,
+  .slot.lost .sig {
+    opacity: 0.55;
+    filter: saturate(0.3);
+  }
+  .slot.lost .sig::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: conic-gradient(var(--color-danger) calc(var(--lost-left) * 1turn), transparent 0);
+    -webkit-mask: radial-gradient(circle, transparent 62%, #000 64%);
+    mask: radial-gradient(circle, transparent 62%, #000 64%);
+    animation: lost-drain var(--lost-ms, 15s) linear var(--lost-delay, 0s) forwards;
+  }
+  .slot.lost .pill {
+    color: var(--color-danger);
+    border-color: rgba(255, 156, 138, 0.5);
+  }
+  .slot.lost .pill::before {
+    background: var(--color-danger);
+    box-shadow: 0 0 8px var(--color-danger);
+    animation-duration: 0.8s;
+  }
+  @keyframes lost-drain {
+    from {
+      --lost-left: 1;
+    }
+    to {
+      --lost-left: 0;
+    }
+  }
   @keyframes slotIn {
     from {
       transform: scale(0.96);
@@ -1039,4 +1077,11 @@
       animation: none !important;
     }
   }
+}
+
+/* Lets the lobby's lost-wand ring animate how much of it is left. */
+@property --lost-left {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
 }

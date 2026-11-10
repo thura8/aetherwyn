@@ -1,4 +1,4 @@
-import { createSoundEngine, syncSoundButton } from "./soundEngine";
+import { createSoundEngine, syncSoundButton, toggleMute } from "./soundEngine";
 import { createCameraDirector } from "./cameraDirector";
 import { detectDevice } from "./device";
 import { elementById, type ExperienceContext } from "./experienceContext";
@@ -45,9 +45,7 @@ export function startExperience() {
 
   syncSoundButton(sound);
   lifecycle.listen(elementById("sound"), "click", () => {
-    sound.unlock();
-    sound.setMuted(!sound.muted);
-    syncSoundButton(sound);
+    toggleMute(sound);
     if (!sound.muted) sound.press();
   });
   const unlockSoundOnce = () => sound.unlock();

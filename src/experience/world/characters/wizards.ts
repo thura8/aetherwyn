@@ -115,6 +115,24 @@ interface Wizard {
   animatedNeck: THREE.Quaternion;
   animatedHead: THREE.Quaternion;
   phase: number;
+  body: THREE.SkinnedMesh;
+  /** 0 = solid, 1 = a ghost (their phone dropped off); eases toward fadeTarget. */
+  fade: number;
+  fadeTarget: number;
+}
+
+/** How see-through a wizard whose wand is lost becomes. */
+const GHOST_OPACITY = 0.32;
+
+function applyFade(wizard: Wizard) {
+  const materials = ([] as THREE.Material[]).concat(wizard.body.material);
+  const ghostly = wizard.fade > 0.001;
+  materials.forEach((material) => {
+    material.transparent = ghostly;
+    material.opacity = 1 - (1 - GHOST_OPACITY) * wizard.fade;
+    material.depthWrite = wizard.fade < 0.5;
+  });
+  wizard.body.castShadow = wizard.fade < 0.5;
 }
 
 const easeOutBack = (k: number) =>
@@ -410,7 +428,12 @@ export function buildWizards(
       animatedNeck: bones.neck.quaternion.clone(),
       animatedHead: bones.head.quaternion.clone(),
       phase: Math.random() * 10,
+      body,
+      fade: 0,
+      fadeTarget: 0,
     };
+    // The painted materials are shared by class, so clear any fade a previous wizard left on them.
+    applyFade(wizard);
 
     mixer.addEventListener("finished", (event) => {
       if (event.action !== wizard.oneShot) return;
@@ -597,6 +620,14 @@ export function buildWizards(
 
   function updateWizard(wizard: Wizard, { delta, elapsed }: FrameTime) {
     wizard.age += delta;
+    if (wizard.fade !== wizard.fadeTarget) {
+      const step = reducedMotion ? 1 : delta * 2.5;
+      wizard.fade =
+        wizard.fade < wizard.fadeTarget
+          ? Math.min(wizard.fadeTarget, wizard.fade + step)
+          : Math.max(wizard.fadeTarget, wizard.fade - step);
+      applyFade(wizard);
+    }
     const appear = Math.min(1, wizard.age / APPEAR_SECONDS);
     wizard.group.scale.setScalar(
       WIZARD_SCALE *
@@ -657,6 +688,12 @@ export function buildWizards(
         other.lookTarget.y += HEAD_HEIGHT * WIZARD_SCALE;
         other.lookUntil = state.time + 2.5;
       });
+    },
+
+    /** Turns the wizard on a circle into a see-through ghost while their phone is away, or back. */
+    setWizardFaded(circleIndex: number, faded: boolean) {
+      const wizard = slots[circleIndex];
+      if (wizard) wizard.fadeTarget = faded ? 1 : 0;
     },
 
     /** Makes the wizard on a circle cast now. Returns false when there is none or they are busy. */

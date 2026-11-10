@@ -7,7 +7,7 @@ export const WIZARD_CLASS_IDS = [
 
 export type WizardClassId = (typeof WIZARD_CLASS_IDS)[number];
 
-export interface WizardPalette {
+interface WizardPalette {
   skin: number;
   hair: number;
   hairTip: number;

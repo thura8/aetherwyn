@@ -1,9 +1,29 @@
 import * as THREE from "three";
-import { elementById, type ExperienceContext } from "../experienceContext";
+import {
+  elementById,
+  replayClass,
+  type ExperienceContext,
+} from "../experienceContext";
 import type { World } from "../world/createWorld";
 import type { ScreenNavigator } from "./screenNavigator";
 
 const ROUND_SECONDS = 45;
+
+/** What every round starts from. `lastHitTime` and `aim` are left as they were between rounds. */
+const ROUND_RESET = {
+  active: false,
+  score: 0,
+  combo: 1,
+  bestCombo: 1,
+  hits: 0,
+  shots: 0,
+  timeLeft: ROUND_SECONDS,
+  cooldown: 0,
+  lastShownSecond: 99,
+};
+
+/** Where the reticle rests: centred, a little above the middle of the screen. */
+const reticleHome = () => ({ x: innerWidth / 2, y: innerHeight * 0.42 });
 const CAST_COOLDOWN_SECONDS = 0.22;
 const COMBO_WINDOW_SECONDS = 2.5;
 const POINTS_PER_HIT = 100;
@@ -19,30 +39,14 @@ export function setUpTraining(
 ) {
   const { lifecycle, device, sound } = context;
   const reticle = elementById("reticle");
-  const round = {
-    active: false,
-    score: 0,
-    combo: 1,
-    bestCombo: 1,
-    hits: 0,
-    shots: 0,
-    timeLeft: ROUND_SECONDS,
-    lastHitTime: -10,
-    cooldown: 0,
-    aim: { x: innerWidth / 2, y: innerHeight * 0.42 },
-    lastShownSecond: 99,
-  };
+  const round = { ...ROUND_RESET, lastHitTime: -10, aim: reticleHome() };
   let casterTurn = 0;
   const crystalPosition = new THREE.Vector3();
 
   function setStat(id: string, value: string | number, bump?: boolean) {
     const stat = elementById(id);
     stat.querySelector("b")!.textContent = String(value);
-    if (bump) {
-      stat.classList.remove("bump");
-      void stat.offsetWidth;
-      stat.classList.add("bump");
-    }
+    if (bump) replayClass(stat, "bump");
   }
 
   function moveReticle(x: number, y: number) {
@@ -56,9 +60,7 @@ export function setUpTraining(
     const banner = elementById("banner");
     banner.textContent = text;
     banner.hidden = false;
-    banner.classList.remove("go");
-    void banner.offsetWidth;
-    banner.classList.add("go");
+    replayClass(banner, "go");
   }
 
   function showFloatingText(
@@ -87,24 +89,15 @@ export function setUpTraining(
   }
 
   function startRound() {
-    Object.assign(round, {
-      active: false,
-      score: 0,
-      combo: 1,
-      bestCombo: 1,
-      hits: 0,
-      shots: 0,
-      timeLeft: ROUND_SECONDS,
-      cooldown: 0,
-      lastShownSecond: 99,
-    });
+    Object.assign(round, ROUND_RESET);
     setStat("st-score", 0);
     setStat("st-combo", "×1");
     setStat("st-time", ROUND_SECONDS);
     elementById("st-time").classList.remove("low");
     elementById("results").hidden = true;
     reticle.hidden = false;
-    moveReticle(innerWidth / 2, innerHeight * 0.42);
+    const home = reticleHome();
+    moveReticle(home.x, home.y);
     const world = context.world;
     if (world) {
       world.state.training = true;
@@ -234,18 +227,17 @@ export function setUpTraining(
     startRound();
   };
   screenNavigator.onLeave.training = () => {
-    if (context.world) {
-      context.world.state.focus = "arena";
-      context.world.state.portalBoost = 0;
-    }
     round.active = false;
     reticle.hidden = true;
     elementById("results").hidden = true;
     elementById("banner").hidden = true;
-    if (context.world) {
-      context.world.stopTraining();
-      context.world.state.training = false;
-      context.world.state.beamHeight = 1;
+    const world = context.world;
+    if (world) {
+      world.state.focus = "arena";
+      world.state.portalBoost = 0;
+      world.stopTraining();
+      world.state.training = false;
+      world.state.beamHeight = 1;
     }
   };
 

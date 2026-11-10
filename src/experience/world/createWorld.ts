@@ -359,6 +359,7 @@ export async function createWorld(
     getAimRay: training.getAimRay,
     crystals: training.crystals,
     setWizard: wizards.setWizard,
+    setWizardFaded: wizards.setWizardFaded,
     castWizardSpell: wizards.castSpell,
     setWizardCastListener: wizards.setShowOffCastListener,
   };

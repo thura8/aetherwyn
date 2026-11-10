@@ -13,10 +13,10 @@ import { createWizardSkeleton, type BoneName } from "./wizardRig";
  * can see keeps its own palette colour.
  */
 
-export type TurnaroundViewName = "front" | "side" | "back";
+type TurnaroundViewName = "front" | "side" | "back";
 
 /** One painted view, calibrated in concept-sheet pixels (see tools/paperdoll/bake_turnaround.py). */
-export interface TurnaroundView {
+interface TurnaroundView {
   /** Atlas pixel = sheet pixel + offset. */
   offset: [number, number];
   /** Sheet x of the body's centre line. */
@@ -41,7 +41,7 @@ export interface Turnaround {
   joints: Partial<Record<"front" | "back", Partial<Record<BoneName, [number, number]>>>>;
 }
 
-export interface TurnaroundPoses {
+interface TurnaroundPoses {
   front: Pose;
   /** Side and back. */
   neutral: Pose;

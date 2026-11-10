@@ -31,6 +31,8 @@ export function createCameraDirector(context: ExperienceContext) {
   const portalPosition = new THREE.Vector3();
   const portalNormal = new THREE.Vector3();
   const portalTangent = new THREE.Vector3();
+  /** Scratch copy of the portal's position for the join shot, reused every frame. */
+  const portalPoint = new THREE.Vector3();
 
   const circlesIgnited = [false, false, false, false];
   let orbIgnited = false;
@@ -76,14 +78,14 @@ export function createCameraDirector(context: ExperienceContext) {
       }
     } else if (name === "join") {
       world.getPortalPosition(look);
-      const portal = look.clone();
+      const portal = portalPoint.copy(look);
       if (isNarrow()) {
         position.set(
           portal.x + 16,
           portal.y + 6 + Math.sin(time * 0.1) * 0.6,
           portal.z + 22,
         );
-        look.set(portal.x, portal.y + 2 - 6, portal.z);
+        look.set(portal.x, portal.y - 4, portal.z);
       } else {
         position.set(
           portal.x + 20 + mouseX * 2,

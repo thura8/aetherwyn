@@ -1,4 +1,4 @@
-import { syncSoundButton } from "./soundEngine";
+import { toggleMute } from "./soundEngine";
 import type { ExperienceContext } from "./experienceContext";
 import type { ScreenNavigator } from "./screens/screenNavigator";
 import type { TrainingScreen } from "./screens/training";
@@ -47,9 +47,7 @@ export function setUpKeyboardAndGamepad(
     const { key } = event;
     if (key === "m" || key === "M") {
       if (isTypingInInput()) return;
-      sound.unlock();
-      sound.setMuted(!sound.muted);
-      syncSoundButton(sound);
+      toggleMute(sound);
       return;
     }
     if (key === "Escape") {

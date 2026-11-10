@@ -17,6 +17,10 @@ export function createLifecycle() {
         target.removeEventListener(type, listener, options),
       );
     },
+    /** Runs when the experience stops, alongside removing its listeners. */
+    onStop(cleanup: () => void) {
+      removeListeners.push(cleanup);
+    },
     /** Like setTimeout, but never fires after the experience stops. */
     after(callback: () => void, milliseconds: number) {
       const timer = setTimeout(() => {

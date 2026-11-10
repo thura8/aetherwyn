@@ -1,10 +1,18 @@
-import { elementById, type ExperienceContext } from "../experienceContext";
+import {
+  elementById,
+  replayClass,
+  type ExperienceContext,
+} from "../experienceContext";
 import {
   isWizardClassId,
   type WizardClassId,
 } from "../world/characters/wizardClasses";
-import { ROOM_CODE_ALPHABET } from "./lobby";
+import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from "@/shared/relay";
+import type { SeatResult } from "./lobby";
 import type { ScreenNavigator } from "./screenNavigator";
+
+const REALM_FULL =
+  "That realm is full. Four wizards are already in the circles.";
 
 export function setUpJoinForm(
   context: ExperienceContext,
@@ -13,12 +21,13 @@ export function setUpJoinForm(
     name: string,
     isTestWizard: boolean,
     wizardClass?: WizardClassId,
-  ) => number,
+  ) => Promise<SeatResult>,
 ) {
   const { lifecycle, sound } = context;
   const codeInput = elementById<HTMLInputElement>("code-input");
   const nameInput = elementById<HTMLInputElement>("name-input");
   const errorText = elementById("join-error");
+  const joinForm = elementById<HTMLFormElement>("join-form");
 
   lifecycle.listen(codeInput, "input", () => {
     const cleaned = codeInput.value
@@ -36,20 +45,18 @@ export function setUpJoinForm(
   });
 
   function showError(input: HTMLInputElement, message: string) {
-    input.classList.remove("bad");
-    void input.offsetWidth;
-    input.classList.add("bad");
+    replayClass(input, "bad");
     errorText.textContent = message;
     sound.error();
     input.focus();
   }
 
-  lifecycle.listen(elementById("join-form"), "submit", (event) => {
+  lifecycle.listen(joinForm, "submit", async (event) => {
     event.preventDefault();
     const room = context.room;
     const code = codeInput.value.trim().toUpperCase();
     const name = nameInput.value.trim().replace(/[\u0000-\u001f]/g, "");
-    if (code.length !== 4)
+    if (code.length !== ROOM_CODE_LENGTH)
       return showError(codeInput, "Room codes are 4 characters, like A94X.");
     if ([...code].some((character) => !ROOM_CODE_ALPHABET.includes(character)))
       return showError(
@@ -66,21 +73,21 @@ export function setUpJoinForm(
         codeInput,
         `No open realm has the code ${code}. Check the code on the big screen.`,
       );
-    if (room.players.every(Boolean))
-      return showError(
-        codeInput,
-        "That realm is full. Four wizards are already in the circles.",
-      );
-    const chosenClass = new FormData(
-      elementById<HTMLFormElement>("join-form"),
-    ).get("wizard-class");
-    seatPlayer(
+    if (room.players.every(Boolean)) return showError(codeInput, REALM_FULL);
+    const chosenClass = new FormData(joinForm).get("wizard-class");
+    const result = await seatPlayer(
       name,
       false,
       isWizardClassId(chosenClass) ? chosenClass : undefined,
     );
+    if (!result.ok)
+      return result.error === "name-taken"
+        ? showError(
+            nameInput,
+            "A wizard in this realm already bears that name.",
+          )
+        : showError(codeInput, REALM_FULL);
     sound.press();
-    context.showToast(`${name} entered the realm.`);
     codeInput.value = "";
     nameInput.value = "";
     screenNavigator.goTo("lobby");

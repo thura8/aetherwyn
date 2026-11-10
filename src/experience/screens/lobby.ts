@@ -1,5 +1,19 @@
 import qrcode from "qrcode-generator";
-import { elementById, type ExperienceContext, type Room } from "../experienceContext";
+import {
+  LOST_SEAT_MS,
+  ROOM_CODE_ALPHABET,
+  ROOM_CODE_LENGTH,
+  roomUrl,
+  sendRelayAction,
+  type RelayError,
+  type RelayRoom,
+} from "@/shared/relay";
+import {
+  elementById,
+  type ExperienceContext,
+  type Player,
+  type Room,
+} from "../experienceContext";
 import { CIRCLE_COLORS } from "../world/arena";
 import {
   WIZARD_CLASSES,
@@ -8,17 +22,22 @@ import {
 } from "../world/characters/wizardClasses";
 import type { ScreenNavigator } from "./screenNavigator";
 
-/** Room codes leave out 0, O, 1 and I, which are easy to misread on a big screen. */
-export const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const TEST_WIZARD_NAMES = ["Lyra", "Thorne", "Isolde", "Corvin", "Seren", "Bram"];
+const TEST_WIZARD_NAMES = [
+  "Lyra",
+  "Thorne",
+  "Isolde",
+  "Corvin",
+  "Seren",
+  "Bram",
+];
 
 const toCssHex = (color: number) => "#" + color.toString(16).padStart(6, "0");
 
 function generateRoomCode() {
   let code = "";
-  const values = new Uint32Array(4);
+  const values = new Uint32Array(ROOM_CODE_LENGTH);
   crypto.getRandomValues(values);
-  for (let i = 0; i < 4; i++)
+  for (let i = 0; i < ROOM_CODE_LENGTH; i++)
     code += ROOM_CODE_ALPHABET[values[i] % ROOM_CODE_ALPHABET.length];
   return code;
 }
@@ -39,43 +58,98 @@ function renderQrCode(text: string) {
     });
 }
 
+/** A phone player whose phone has dropped off the room (test wizards have no phone to lose). */
+const isWandLost = (player: Player) =>
+  !player.isTestWizard && !player.connected;
+
+function slotSubtitle(player: Player | null, index: number) {
+  const circle = `circle ${index + 1}`;
+  if (!player) return `Casting ${circle}`;
+  return player.wizardClass
+    ? `${WIZARD_CLASSES[player.wizardClass].name} · ${circle}`
+    : `Choosing a wizard… · ${circle}`;
+}
+
+function pillLabel(player: Player) {
+  if (player.isTestWizard) return "Test wand";
+  if (!player.connected) return "Wand lost";
+  return player.ready ? "Ready" : "Wand connected";
+}
+
+function beginReason(seated: Player[]) {
+  if (seated.length === 0) return "Waiting for at least one wizard.";
+  const lost = seated.find(isWandLost);
+  if (lost)
+    return `${lost.name}'s wand is lost. They'll miss their turns until they return.`;
+  const choosing = seated.find((player) => !player.wizardClass);
+  if (choosing) return `${choosing.name} is still choosing a wizard.`;
+  return seated.length === 1
+    ? "1 wizard ready. A duel needs 2; training works with 1."
+    : `${seated.length} wizards ready.`;
+}
+
+/** What seatPlayer reports: seated, or why not. */
+export type SeatResult = { ok: true } | { ok: false; error: RelayError };
+
+/*
+ * The lobby follows the room relay (src/app/api/rooms), so phones that scan the QR code appear here
+ * with the wizard they pick. If the relay can't be reached, it falls back to a local-only room.
+ */
 export function setUpLobby(
   context: ExperienceContext,
   screenNavigator: ScreenNavigator,
 ) {
   const { lifecycle, sound } = context;
   let testWizardCount = 0;
+  let events: EventSource | null = null;
+  /** True while the relay holds the room; false means local-only. */
+  let live = false;
+  let relayPhase: RelayRoom["phase"] = "lobby";
 
   function renderSlots(room: Room) {
     const list = elementById("slots");
     list.innerHTML = "";
     room.players.forEach((player, i) => {
       const slot = document.createElement("li");
-      slot.className = "slot " + (player ? "filled" : "empty");
+      const lost = !!player && isWandLost(player);
+      slot.className =
+        "slot " + (player ? "filled" : "empty") + (lost ? " lost" : "");
+      if (lost && player.lostAt) {
+        // The ring around the sigil drains over the time left; a negative delay starts it part-way.
+        slot.style.setProperty("--lost-ms", `${LOST_SEAT_MS}ms`);
+        slot.style.setProperty(
+          "--lost-delay",
+          `${-(Date.now() - player.lostAt)}ms`,
+        );
+      }
       slot.style.setProperty("--c", toCssHex(CIRCLE_COLORS[i]));
       slot.innerHTML = `<span class="sig" aria-hidden="true"></span><span class="who"><span class="name"></span><span class="cls"></span></span><span class="end"></span>`;
       slot.querySelector(".name")!.textContent = player
         ? player.name
         : "Waiting for a wand…";
-      slot.querySelector(".cls")!.textContent = player
-        ? `${WIZARD_CLASSES[player.wizardClass].name} · circle ${i + 1}`
-        : `Casting circle ${i + 1}`;
+      slot.querySelector(".cls")!.textContent = slotSubtitle(player, i);
       if (player) {
-        slot.querySelector(".who")!.append(createClassPicker(player, i, slot));
+        // Phones choose their own wizard; the host picks for test wizards (and everyone when local-only).
+        if (player.isTestWizard || !live)
+          slot.querySelector(".who")!.append(createClassPicker(player));
         const pill = document.createElement("span");
         pill.className = "pill";
-        pill.textContent = player.isTestWizard ? "Test wand" : "Wand connected";
+        pill.textContent = pillLabel(player);
         const removeButton = document.createElement("button");
         removeButton.className = "x";
         removeButton.type = "button";
         removeButton.textContent = "×";
         removeButton.setAttribute("aria-label", `Remove ${player.name}`);
-        removeButton.addEventListener("click", () => {
-          room.players[i] = null;
-          sound.back();
-          context.showToast(`${player.name} left the circle.`);
-          refreshLobby();
-        });
+        removeButton.addEventListener("click", () => removePlayer(i));
+        if (lost) {
+          const note = document.createElement("span");
+          note.className = "sr-only";
+          note.textContent =
+            relayPhase === "lobby"
+              ? ` They have ${LOST_SEAT_MS / 1000} seconds to return.`
+              : "";
+          pill.append(note);
+        }
         slot.querySelector(".end")!.append(pill, removeButton);
       }
       if (!player || !player.isNew) slot.style.animation = "none";
@@ -91,17 +165,15 @@ export function setUpLobby(
     world.setWizardCastListener(() => {
       if (context.screen === "lobby") sound.cast();
     });
-    world.circles.forEach((_, i) =>
-      world.setWizard(i, context.room?.players[i]?.wizardClass ?? null),
-    );
+    world.circles.forEach((_, i) => {
+      const player = context.room?.players[i];
+      world.setWizard(i, player?.wizardClass ?? null);
+      world.setWizardFaded(i, !!player && isWandLost(player));
+    });
   }
 
   /** The row of character buttons in a seated player's slot. */
-  function createClassPicker(
-    player: NonNullable<Room["players"][number]>,
-    circleIndex: number,
-    slot: HTMLElement,
-  ) {
+  function createClassPicker(player: Player) {
     const picker = document.createElement("span");
     picker.className = "classes";
     picker.setAttribute("role", "group");
@@ -118,18 +190,21 @@ export function setUpLobby(
         String(player.wizardClass === classId),
       );
       button.style.setProperty("--k", wizardClass.swatch);
-      button.addEventListener("click", () => {
-        if (player.wizardClass === classId) return;
+      button.addEventListener("click", async () => {
+        if (player.wizardClass === classId || !context.room) return;
+        if (live) {
+          const result = await sendRelayAction(context.room.code, {
+            type: "setWizard",
+            seatId: player.id,
+            wizard: classId,
+          });
+          if (!result.ok && result.error === "wizard-taken")
+            context.showToast(`${wizardClass.name} is already in a circle.`);
+          return;
+        }
         player.wizardClass = classId;
-        picker
-          .querySelectorAll(".class-dot")
-          .forEach((other) =>
-            other.setAttribute("aria-pressed", String(other === button)),
-          );
-        slot.querySelector(".cls")!.textContent =
-          `${wizardClass.name} · circle ${circleIndex + 1}`;
         sound.ignite();
-        syncWizards();
+        refreshLobby();
       });
       picker.append(button);
     });
@@ -141,52 +216,189 @@ export function setUpLobby(
     if (!room) return;
     renderSlots(room);
     syncWizards();
-    const seatedCount = room.players.filter(Boolean).length;
-    elementById<HTMLButtonElement>("begin").disabled = seatedCount === 0;
-    elementById("begin-reason").textContent =
-      seatedCount === 0
-        ? "Waiting for at least one wizard."
-        : seatedCount === 1
-          ? "1 wizard ready. A duel needs 2; training works with 1."
-          : `${seatedCount} wizards ready.`;
-    elementById<HTMLButtonElement>("add-test").disabled = seatedCount >= 4;
+    const seated = room.players.filter((player): player is Player => !!player);
+    elementById<HTMLButtonElement>("begin").disabled = seated.length === 0;
+    elementById("begin-reason").textContent = beginReason(seated);
+    elementById<HTMLButtonElement>("add-test").disabled = seated.length >= 4;
     if (context.world && context.screen === "lobby")
       context.world.setCirclesLit(room.players.map(Boolean));
   }
 
-  /** Seats a player in the first free circle. Returns the circle's index, or -1 when the room is full. */
-  function seatPlayer(
+  /** Flashes a casting circle in the arena (only while the lobby is on screen). */
+  function flashCircle(index: number) {
+    if (context.world && context.screen === "lobby")
+      context.world.circles[index].flashTime = context.world.state.time;
+  }
+
+  function celebrateArrival(index: number) {
+    flashCircle(index);
+    sound.ignite();
+  }
+
+  /* ---------- the relay ---------- */
+
+  /** Turns the relay's room into the lobby's players, with sound and toasts for what changed. */
+  function applyRelayRoom(relay: RelayRoom) {
+    const room = context.room;
+    if (!room || relay.code !== room.code) return;
+    relayPhase = relay.phase;
+    const before = new Map(
+      room.players.flatMap((player) => (player ? [[player.id, player]] : [])),
+    );
+    room.players = relay.seats.map((seat, index) => {
+      if (!seat) return null;
+      const previous = before.get(seat.id);
+      before.delete(seat.id);
+      if (!previous) {
+        celebrateArrival(index);
+        context.showToast(`${seat.name} entered the realm.`);
+      } else if (previous.wizardClass !== seat.wizard && seat.wizard) {
+        sound.ignite();
+        flashCircle(index);
+      } else if (previous.connected && !seat.connected && !seat.isTest) {
+        context.showToast(`${seat.name}'s wand slipped away…`);
+      } else if (!previous.connected && seat.connected) {
+        context.showToast(`${seat.name} returned.`);
+        sound.tick(true);
+      } else if (!previous.ready && seat.ready && !seat.isTest)
+        sound.tick(true);
+      return {
+        id: seat.id,
+        name: seat.name,
+        wizardClass: seat.wizard,
+        isTestWizard: seat.isTest,
+        ready: seat.ready,
+        connected: seat.connected,
+        lostAt: seat.lostAt ?? null,
+        isNew: !previous,
+      };
+    });
+    for (const gone of before.values()) {
+      sound.back();
+      context.showToast(
+        isWandLost(gone)
+          ? `${gone.name}'s wand faded from the circle.`
+          : `${gone.name} left the circle.`,
+      );
+    }
+    refreshLobby();
+  }
+
+  function followRelay(code: string) {
+    events?.close();
+    events = new EventSource(`${roomUrl(code)}/events?role=host`);
+    events.onmessage = (message) => applyRelayRoom(JSON.parse(message.data));
+  }
+
+  async function openRelayRoom(code: string) {
+    try {
+      const response = await fetch(roomUrl(code), { method: "PUT" });
+      live = response.ok;
+    } catch {
+      live = false;
+    }
+    if (!context.room || context.room.code !== code) return;
+    if (live) followRelay(code);
+    else
+      context.showToast(
+        "Phones can't connect right now. Test wizards still work.",
+      );
+    refreshLobby();
+  }
+
+  function closeRelayRoom(code: string) {
+    events?.close();
+    events = null;
+    if (live) void fetch(roomUrl(code), { method: "DELETE" }).catch(() => {});
+    live = false;
+  }
+
+  lifecycle.onStop(() => events?.close());
+
+  /* ---------- seating ---------- */
+
+  function seatLocally(
     name: string,
     isTestWizard: boolean,
     wizardClass?: WizardClassId,
-  ) {
+  ): SeatResult {
     const room = context.room;
-    if (!room) return -1;
+    if (!room) return { ok: false, error: "no-room" };
     const index = room.players.findIndex((player) => !player);
-    if (index < 0) return -1;
+    if (index < 0) return { ok: false, error: "room-full" };
+    if (room.players.some((p) => p?.name.toLowerCase() === name.toLowerCase()))
+      return { ok: false, error: "name-taken" };
     // without a choice, take the first character nobody else in the room is playing
     const takenClasses = room.players.map((player) => player?.wizardClass);
     room.players[index] = {
+      id: crypto.randomUUID(),
       name,
       wizardClass:
-        wizardClass ??
-        WIZARD_CLASS_IDS.find((classId) => !takenClasses.includes(classId)) ??
-        WIZARD_CLASS_IDS[index],
+        wizardClass && !takenClasses.includes(wizardClass)
+          ? wizardClass
+          : (WIZARD_CLASS_IDS.find((id) => !takenClasses.includes(id)) ??
+            WIZARD_CLASS_IDS[index]),
       isTestWizard,
+      ready: true,
+      connected: true,
+      lostAt: null,
       isNew: true,
     };
-    if (context.world && context.screen === "lobby")
-      context.world.circles[index].flashTime = context.world.state.time;
-    sound.ignite();
-    return index;
+    celebrateArrival(index);
+    context.showToast(`${name} entered the realm.`);
+    refreshLobby();
+    return { ok: true };
   }
+
+  /** Seats a player in the first free circle, through the relay when it's live. */
+  async function seatPlayer(
+    name: string,
+    isTestWizard: boolean,
+    wizardClass?: WizardClassId,
+  ): Promise<SeatResult> {
+    const room = context.room;
+    if (!room) return { ok: false, error: "no-room" };
+    if (!live) return seatLocally(name, isTestWizard, wizardClass);
+    const result = await sendRelayAction(
+      room.code,
+      isTestWizard
+        ? { type: "addTest", name }
+        : { type: "join", name, wizard: wizardClass },
+    );
+    if (!result.ok) return result;
+    // A wizard joining from this device counts as present and ready.
+    if (!isTestWizard && result.seatId)
+      void sendRelayAction(room.code, {
+        type: "setReady",
+        seatId: result.seatId,
+        ready: true,
+      });
+    // The relay's next snapshot seats them in the lobby.
+    return { ok: true };
+  }
+
+  function removePlayer(index: number) {
+    const room = context.room;
+    const player = room?.players[index];
+    if (!room || !player) return;
+    if (live) {
+      void sendRelayAction(room.code, { type: "kick", seatId: player.id });
+      return;
+    }
+    room.players[index] = null;
+    sound.back();
+    context.showToast(`${player.name} left the circle.`);
+    refreshLobby();
+  }
+
+  /* ---------- screen wiring ---------- */
 
   screenNavigator.onEnter.lobby = () => {
     if (!context.room) {
-      context.room = {
-        code: generateRoomCode(),
-        players: [null, null, null, null],
-      };
+      const code = generateRoomCode();
+      context.room = { code, players: [null, null, null, null] };
+      relayPhase = "lobby";
+      void openRelayRoom(code);
       if (context.world) {
         context.world.triggerShockwave(0.8);
         context.world.state.orbTarget = 1.6;
@@ -195,25 +407,32 @@ export function setUpLobby(
         }, 900);
       }
       sound.surge();
+    } else if (live && relayPhase !== "lobby") {
+      void sendRelayAction(context.room.code, { type: "backToLobby" });
     }
     elementById("room-code").textContent = context.room.code;
-    renderQrCode(`https://aetherwyn.local/join?code=${context.room.code}`);
+    // Phones on the same network open this page's /join route, which reads the code from the link.
+    renderQrCode(`${location.origin}/join?code=${context.room.code}`);
     refreshLobby();
   };
 
-  lifecycle.listen(elementById("add-test"), "click", () => {
+  lifecycle.listen(elementById("add-test"), "click", async () => {
     if (!context.room) return;
     const name =
       TEST_WIZARD_NAMES[testWizardCount++ % TEST_WIZARD_NAMES.length];
-    if (seatPlayer(name, true) >= 0) {
-      context.showToast(`${name} entered the realm.`);
-      refreshLobby();
-    }
+    const result = await seatPlayer(name, true);
+    if (!result.ok && result.error === "name-taken") {
+      const retry = await seatPlayer(`${name} ${testWizardCount}`, true);
+      if (!retry.ok) sound.error();
+    } else if (!result.ok) sound.error();
   });
-  lifecycle.listen(elementById("begin"), "click", () =>
-    screenNavigator.goTo("training"),
-  );
+  lifecycle.listen(elementById("begin"), "click", () => {
+    if (live && context.room)
+      void sendRelayAction(context.room.code, { type: "begin" });
+    screenNavigator.goTo("training");
+  });
   lifecycle.listen(elementById("close-room"), "click", () => {
+    if (context.room) closeRelayRoom(context.room.code);
     context.room = null;
     syncWizards();
     context.showToast("Room closed.");
