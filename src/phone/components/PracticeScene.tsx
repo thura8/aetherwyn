@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- voice UI is paused; these come back with it */
 "use client";
 
 import {
@@ -505,6 +506,7 @@ export default function PracticeScene({ session }: { session: RoomSession }) {
         )}
       </div>
 
+      {/* Voice detection paused for now; restore this block to bring it back.
       <p className="ph-voice-line">
         {voiceLine(engine, model, access.mic === "unavailable")}
         {engine === "browser" &&
@@ -526,6 +528,7 @@ export default function PracticeScene({ session }: { session: RoomSession }) {
           </>
         ) : null}
       </p>
+      */}
     </div>
   );
 }

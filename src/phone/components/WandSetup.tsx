@@ -14,7 +14,8 @@ import {
 } from "@/phone/casting/useLiveLevel";
 import { useFeedback } from "@/phone/feedback";
 import { CheckRune, FiligreeFrame } from "./Glyphs";
-import VoiceCheck from "./VoiceCheck";
+// Voice detection is paused for now.
+// import VoiceCheck from "./VoiceCheck";
 
 const BARS = 16;
 
@@ -155,7 +156,7 @@ export default function WandSetup() {
         state={access.mic}
         idle="Not yet attuned"
         action="Attune"
-        hint="Hold the button, say “Fire!” and let go: the phone checks it can hear the spell words."
+        hint="Voice casting is resting for now: spells come from your swing alone."
         deniedHint="The microphone was refused. Allow it for this site in your browser's settings, then reload."
         onRequest={() => void requestMic().then(afterRequest)}
       >
@@ -174,7 +175,7 @@ export default function WandSetup() {
             />
           ))}
         </div>
-        <VoiceCheck />
+        {/* <VoiceCheck /> */}
       </Step>
 
       <p className="ph-foot">

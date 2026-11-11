@@ -46,3 +46,6 @@ next-env.d.ts
 # local https certificates and the downloaded voice model
 /.certs/
 /public/models/
+
+# playtest event log written by /api/log in dev
+/logs/

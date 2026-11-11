@@ -12,8 +12,11 @@ import {
   type MoveName,
 } from "./motion/classifyMove";
 import type { HeardResult, VoiceListener, VoiceStatus } from "./voice/listener";
+import { logPlaytest } from "./playtestLog";
 import { matchSpellWord } from "./voice/matchWord";
-import { createVoiceListener, learnFromListen } from "./voice/voiceEngine";
+// Voice detection is paused until a reliable engine is found; casts use the move alone.
+// import { createVoiceListener, learnFromListen } from "./voice/voiceEngine";
+import { learnFromListen } from "./voice/voiceEngine";
 
 /*
  * One cast: hold the pad (or a move button), shout the word and do the move, then let go.
@@ -67,17 +70,19 @@ export function useHoldToCast(
     const access = getMediaAccess();
     lockedRef.current = null;
     setLockedWord(null);
-    const listener =
-      access.mic === "unavailable"
-        ? null
-        : createVoiceListener(setVoiceStatus, (transcript) => {
-            const word = matchSpellWord(transcript);
-            if (!word || lockedRef.current === word) return;
-            lockedRef.current = word;
-            setLockedWord(word);
-            onWordLockedRef.current?.(word);
-          });
-    listener?.start();
+    // VOICE PAUSED: re-enable this block (and the import above) to bring voice detection back.
+    // const listener =
+    //   access.mic === "unavailable"
+    //     ? null
+    //     : createVoiceListener(setVoiceStatus, (transcript) => {
+    //         const word = matchSpellWord(transcript);
+    //         if (!word || lockedRef.current === word) return;
+    //         lockedRef.current = word;
+    //         setLockedWord(word);
+    //         onWordLockedRef.current?.(word);
+    //       });
+    const listener: VoiceListener | null = null;
+    // listener?.start();
     cast.current = {
       startedAt: performance.now(),
       stopMotion: access.motion === "granted" ? startRecording() : null,
@@ -120,6 +125,17 @@ export function useHoldToCast(
       voiceOff,
       switchedVoice,
     };
+    logPlaytest("cast", {
+      heldMs: Math.round(performance.now() - current.startedAt),
+      usedButton: buttonMove ?? null,
+      sensorsUsed: reading !== null,
+      move,
+      borderline: reading?.borderline ?? null,
+      measured: reading?.measured ?? null,
+      heard: result.heard,
+      voiceOff,
+      verdict,
+    });
     setOutcome(result);
     setVoiceStatus("idle");
     setPhase("result");
@@ -128,6 +144,7 @@ export function useHoldToCast(
 
   /** The hold was interrupted (the pointer left, a call came in…): nothing is cast. */
   const cancel = useCallback(() => {
+    if (cast.current) logPlaytest("cancel", { heldMs: Math.round(performance.now() - cast.current.startedAt) });
     cast.current?.listener?.abort();
     cast.current?.stopMotion?.();
     cast.current = null;
