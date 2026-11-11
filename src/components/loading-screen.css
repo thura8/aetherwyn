@@ -251,7 +251,6 @@
 }
 .sigil .ring-fill {
   fill: none;
-  stroke: url(#aw-gold);
   stroke-width: 2.6;
   stroke-linecap: round;
   stroke-dasharray: 100;

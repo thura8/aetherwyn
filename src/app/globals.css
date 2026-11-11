@@ -71,9 +71,6 @@
       );
     transition: opacity 0.8s ease;
   }
-  body[data-screen="training"] .shade {
-    opacity: 0.55;
-  }
 
   .screen {
     position: fixed;
@@ -616,6 +613,44 @@
       0 0 14px var(--c),
       inset 0 0 8px var(--c);
   }
+  /* A phone that dropped off: dimmed, with a ring draining over the seconds it has to return. */
+  .slot.lost {
+    border-color: rgba(255, 156, 138, 0.45);
+    background: rgba(29, 44, 85, 0.3);
+    box-shadow: none;
+  }
+  .slot.lost .who,
+  .slot.lost .sig {
+    opacity: 0.55;
+    filter: saturate(0.3);
+  }
+  .slot.lost .sig::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: conic-gradient(var(--color-danger) calc(var(--lost-left) * 1turn), transparent 0);
+    -webkit-mask: radial-gradient(circle, transparent 62%, #000 64%);
+    mask: radial-gradient(circle, transparent 62%, #000 64%);
+    animation: lost-drain var(--lost-ms, 15s) linear var(--lost-delay, 0s) forwards;
+  }
+  .slot.lost .pill {
+    color: var(--color-danger);
+    border-color: rgba(255, 156, 138, 0.5);
+  }
+  .slot.lost .pill::before {
+    background: var(--color-danger);
+    box-shadow: 0 0 8px var(--color-danger);
+    animation-duration: 0.8s;
+  }
+  @keyframes lost-drain {
+    from {
+      --lost-left: 1;
+    }
+    to {
+      --lost-left: 0;
+    }
+  }
   @keyframes slotIn {
     from {
       transform: scale(0.96);
@@ -821,99 +856,70 @@
     }
   }
 
-  .stat {
-    min-width: 96px;
-    padding: 8px 16px;
-    text-align: center;
-    background: rgba(14, 18, 40, 0.6);
-    border: 1px solid rgba(250, 220, 152, 0.35);
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-  }
-  .stat b {
-    display: block;
-    font: 700 1.6rem var(--font-label);
-    color: var(--color-gold-hi);
-    font-variant-numeric: tabular-nums;
-    line-height: 1.1;
-  }
-  .stat span {
-    font-family: var(--font-label);
-    font-size: 0.62rem;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-    color: var(--color-lavender);
-  }
-  .stat.bump b {
-    animation: bump 0.3s ease;
-  }
-  @keyframes bump {
-    40% {
-      transform: scale(1.3);
-      color: #fff;
-    }
-  }
-  .stat.low b {
-    color: var(--color-danger);
-  }
-  .banner.go {
-    animation: banner 0.9s cubic-bezier(0.2, 1.3, 0.4, 1) both;
-  }
-  @keyframes banner {
-    0% {
-      opacity: 0;
-      transform: scale(2);
-    }
-    30% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    80% {
-      opacity: 1;
-    }
-    100% {
-      opacity: 0;
-      transform: scale(0.9);
-    }
-  }
-  .reticle {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 46px;
-    height: 46px;
-    margin: -23px 0 0 -23px;
-    pointer-events: none;
-    z-index: 4;
-    transition: transform 0.08s;
-  }
-  .reticle svg {
-    width: 100%;
-    height: 100%;
-    overflow: visible;
-  }
-  .reticle circle,
-  .reticle path {
-    fill: none;
-    stroke: var(--color-gold-hi);
-    stroke-width: 1.6;
-  }
-  .reticle .spin {
-    transform-origin: 23px 23px;
-    animation: spin 6s linear infinite;
-  }
-  .reticle.lock circle,
-  .reticle.lock path {
-    stroke: var(--color-cyan);
-  }
-  .reticle.fire {
-    transform: scale(0.75);
-  }
   @keyframes spin {
     to {
       transform: rotate(360deg);
     }
   }
+  /* ---------- spell practice board ---------- */
+  .practice-legend {
+    --k: var(--color-gold-hi);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--k) 45%, transparent);
+    background: color-mix(in srgb, var(--k) 8%, rgba(29, 44, 85, 0.45));
+  }
+  .practice-word {
+    font: italic 700 1.25rem/1.1 var(--font-body);
+    color: var(--k);
+    text-shadow: 0 0 12px color-mix(in srgb, var(--k) 50%, transparent);
+  }
+  .practice-move {
+    font: 600 0.66rem var(--font-label);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-gold-hi);
+  }
+  .practice-how {
+    font-size: 0.9rem;
+    color: var(--color-ink-dim);
+  }
+  .practice-progress {
+    gap: 12px;
+  }
+  .practice-spell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .practice-spell-name {
+    font: 600 0.58rem var(--font-label);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-lavender);
+  }
+  .practice-spell.mastered .practice-spell-name {
+    color: var(--color-gold-hi);
+  }
+  .practice-gems {
+    display: flex;
+    gap: 5px;
+  }
+  .practice-gems i {
+    width: 8px;
+    height: 8px;
+    rotate: 45deg;
+    border: 1px solid rgba(250, 220, 152, 0.55);
+    background: rgba(10, 8, 26, 0.8);
+  }
+  .practice-gems i.lit {
+    background: var(--color-gold-hi);
+    box-shadow: 0 0 8px var(--color-gold-hi);
+  }
+
   .floater {
     position: fixed;
     pointer-events: none;
@@ -925,6 +931,13 @@
     animation: floatUp 0.9s ease-out forwards;
     z-index: 4;
     white-space: nowrap;
+  }
+  .floater.spell {
+    font-size: 1.15rem;
+    animation-duration: 1.9s;
+  }
+  .floater.spell.weak {
+    color: var(--color-lavender);
   }
   .floater.miss {
     color: var(--color-lavender);
@@ -993,13 +1006,6 @@
       min-height: 50px;
       padding: 8px 10px;
     }
-    .stat {
-      min-width: 76px;
-      padding: 6px 10px;
-    }
-    .stat b {
-      font-size: 1.25rem;
-    }
   }
   @media (max-width: 480px) {
     .toast {
@@ -1033,10 +1039,16 @@
       transform: none;
     }
     .slot.filled,
-    .stat.bump b,
-    .banner.go,
-    .input.bad {
+    .input.bad,
+    .floater {
       animation: none !important;
     }
   }
+}
+
+/* Lets the lobby's lost-wand ring animate how much of it is left. */
+@property --lost-left {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
 }

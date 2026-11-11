@@ -74,7 +74,8 @@ export function createScreenNavigator(
 
   lifecycle.listen(elementById("host"), "click", () => goTo("lobby"));
   lifecycle.listen(elementById("join-here"), "click", () => goTo("join"));
-  lifecycle.listen(elementById("train"), "click", () => goTo("training"));
+  // Spell practice needs phones in a room, so the Training Grounds start in the lobby.
+  lifecycle.listen(elementById("train"), "click", () => goTo("lobby"));
   lifecycle.listen(elementById("back"), "click", goBack);
 
   return { screens, onEnter, onLeave, goTo, goBack };

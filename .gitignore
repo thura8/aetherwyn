@@ -42,3 +42,7 @@ next-env.d.ts
 
 # paperdoll tooling
 /.venv-paperdoll
+
+# local https certificates and the downloaded voice model
+/.certs/
+/public/models/

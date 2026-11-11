@@ -55,7 +55,8 @@ function applyEnvelope(
   gain.gain.exponentialRampToValueAtTime(0.0001, time + attack + decay);
 }
 
-export function createSoundEngine() {
+/** `music: false` keeps the ambient score off, for phones whose big screen already plays it. */
+export function createSoundEngine({ music = true }: { music?: boolean } = {}) {
   let audio: AudioContext | null = null;
   let master: GainNode;
   let effectsBus: GainNode;
@@ -92,8 +93,10 @@ export function createSoundEngine() {
     musicBus = audio.createGain();
     musicBus.gain.value = 0.0;
     musicBus.connect(master);
-    musicBus.gain.setTargetAtTime(0.32, audio.currentTime + 0.2, 2.5);
-    startMusic(audio);
+    if (music) {
+      musicBus.gain.setTargetAtTime(0.32, audio.currentTime + 0.2, 2.5);
+      startMusic(audio);
+    }
   }
 
   function tone(
@@ -407,6 +410,13 @@ export function createSoundEngine() {
 }
 
 export type SoundEngine = ReturnType<typeof createSoundEngine>;
+
+/** Flips mute (unlocking audio first, since this runs from a click or key press) and updates the button. */
+export function toggleMute(sound: SoundEngine) {
+  sound.unlock();
+  sound.setMuted(!sound.muted);
+  syncSoundButton(sound);
+}
 
 export function syncSoundButton(sound: SoundEngine) {
   const isOn = !sound.muted;

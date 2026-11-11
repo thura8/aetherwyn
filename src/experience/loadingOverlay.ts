@@ -3,7 +3,7 @@ import { elementById, type ExperienceContext } from "./experienceContext";
 const TIP_ROTATION_MS = 3600;
 const TIPS = [
   "Four casting circles ring the arena, one for each wizard.",
-  "Your phone is your wand. Flick it to cast.",
+  "Your phone is your wand. Shout the spell and move it to cast.",
   "The orb above the arena wakes when every circle is lit.",
   "Through the portal lie the Training Grounds.",
   "Crystals shatter faster when you chain your casts.",

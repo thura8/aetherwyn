@@ -370,7 +370,7 @@ class WizardParts {
   }
 }
 
-export const MATERIAL_LAYERS: MaterialLayer[] = ["cloth", "metal", "glow"];
+const MATERIAL_LAYERS: MaterialLayer[] = ["cloth", "metal", "glow"];
 
 const CAPE_TOP_Y = 1.45;
 const CAPE_BOTTOM_Y = 0.4;
