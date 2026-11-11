@@ -1831,6 +1831,676 @@
     }
   }
 
+  /* ---------- voice check (Your wand tab) ---------- */
+  .ph-voice-check {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .ph-voice-choice {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    padding: 3px;
+    border: 1px solid rgba(250, 220, 152, 0.3);
+    border-radius: 3px;
+    background: rgba(10, 12, 30, 0.7);
+  }
+  .ph-voice-option {
+    min-height: 38px;
+    padding: 0 6px;
+    font: 600 0.66rem var(--font-label);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-ink-dim);
+    background: none;
+    border: 0;
+    border-radius: 2px;
+    cursor: pointer;
+    transition:
+      background 0.25s,
+      color 0.25s;
+  }
+  .ph-voice-option.on {
+    color: #2a1a05;
+    background: linear-gradient(
+      180deg,
+      #ffefc4,
+      var(--color-gold-hi) 40%,
+      #d2a04a
+    );
+  }
+  .ph-voice-option:disabled:not(.on) {
+    opacity: 0.4;
+  }
+  .ph-voice-hold.btn {
+    width: 100%;
+    min-height: 44px;
+    touch-action: none;
+    -webkit-touch-callout: none;
+  }
+  .ph-voice-hold.live {
+    border-color: var(--color-cyan);
+    box-shadow: 0 0 22px rgba(148, 225, 243, 0.45);
+  }
+
+  /* ================= spell practice ================= */
+  .ph-practice {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-top: 2px;
+  }
+  .ph-practice-head {
+    text-align: center;
+  }
+
+  /* ---------- spell chooser ---------- */
+  .ph-spell-choice {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .ph-spell-card {
+    --sc: var(--color-lavender);
+    --sg: var(--color-gold-hi);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 10px 12px;
+    font: inherit;
+    color: var(--color-ink);
+    background:
+      radial-gradient(
+        120% 80% at 50% 0%,
+        color-mix(in srgb, var(--sc) 30%, transparent),
+        transparent 70%
+      ),
+      linear-gradient(180deg, rgba(20, 24, 52, 0.85), rgba(10, 12, 30, 0.9));
+    border: 1px solid rgba(250, 220, 152, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.62;
+    filter: saturate(0.6);
+    transition:
+      opacity 0.3s,
+      filter 0.3s,
+      border-color 0.3s,
+      box-shadow 0.3s,
+      transform 0.2s cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .ph-spell-card.on {
+    opacity: 1;
+    filter: none;
+    border-color: color-mix(in srgb, var(--sg) 70%, white);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--sc) 60%, transparent),
+      0 0 26px color-mix(in srgb, var(--sc) 45%, transparent);
+  }
+  .ph-spell-card:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .ph-spell-card:focus-visible {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 3px;
+  }
+  .ph-spell-icon {
+    width: 40px;
+    height: 40px;
+    color: var(--sg);
+    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--sc) 80%, transparent));
+  }
+  .ph-spell-word {
+    font: italic 700 1.5rem/1.1 var(--font-body);
+    background: var(--ph-gold-face);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .ph-spell-move {
+    font: 600 0.62rem var(--font-label);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--color-lavender);
+  }
+  .ph-mastery {
+    display: flex;
+    gap: 7px;
+    margin-top: 4px;
+  }
+  .ph-mastery span {
+    width: 9px;
+    height: 9px;
+    rotate: 45deg;
+    border: 1px solid rgba(250, 220, 152, 0.55);
+    background: rgba(10, 8, 26, 0.8);
+    transition:
+      background 0.3s,
+      box-shadow 0.3s;
+  }
+  .ph-mastery span.lit {
+    background: var(--sg);
+    box-shadow: 0 0 8px var(--sg);
+    animation: ph-pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+  .ph-mastered {
+    position: absolute;
+    top: -9px;
+    right: -6px;
+    padding: 3px 8px;
+    font: 700 0.56rem var(--font-label);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #1d1003;
+    background: var(--ph-gold-face);
+    border-radius: 2px;
+    box-shadow: 0 0 12px rgba(250, 220, 152, 0.6);
+    animation: ph-stamp 0.5s cubic-bezier(0.3, 1.6, 0.4, 1) both;
+  }
+
+  /* ---------- how-to line ---------- */
+  .ph-howto {
+    --sc: var(--color-lavender);
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+  .ph-howto p {
+    margin: 0;
+    font-size: 1.02rem;
+    line-height: 1.35;
+    color: var(--color-ink-dim);
+  }
+  .ph-howto b {
+    color: var(--color-gold-hi);
+    font-weight: 600;
+  }
+  .ph-howto-glyph {
+    flex: none;
+    width: 52px;
+    height: 52px;
+  }
+
+  /* ---------- the animated move glyph ---------- */
+  .ph-move {
+    overflow: visible;
+    fill: none;
+    stroke: var(--color-gold-hi);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .ph-move .screen {
+    fill: rgba(148, 225, 243, 0.14);
+    stroke: rgba(148, 225, 243, 0.5);
+  }
+  .ph-move .thumb {
+    fill: rgba(148, 225, 243, 0.55);
+    stroke: var(--color-cyan);
+  }
+  .ph-move .trail {
+    stroke: var(--sg, var(--color-cyan));
+    stroke-width: 2;
+    stroke-dasharray: 3 4;
+    opacity: 0;
+  }
+  .ph-move .phone {
+    transform-box: view-box;
+    transform-origin: 32px 50px;
+  }
+  .ph-move.raise .phone {
+    animation: ph-raise 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  .ph-move.raise .trail {
+    animation: ph-raise-trail 2.2s ease-out infinite;
+  }
+  .ph-move.shake .phone {
+    animation: ph-shake 2.2s ease-in-out infinite;
+  }
+  .ph-move.shake .trail {
+    animation: ph-shake-trail 2.2s ease-in-out infinite;
+  }
+  @keyframes ph-raise {
+    0%,
+    30% {
+      transform: translateY(8px);
+    }
+    55%,
+    75% {
+      transform: translateY(-12px);
+    }
+    100% {
+      transform: translateY(8px);
+    }
+  }
+  @keyframes ph-raise-trail {
+    0%,
+    35% {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    55% {
+      opacity: 1;
+      transform: translateY(-6px);
+    }
+    80%,
+    100% {
+      opacity: 0;
+      transform: translateY(-14px);
+    }
+  }
+  @keyframes ph-shake {
+    0%,
+    30%,
+    80%,
+    100% {
+      transform: none;
+    }
+    37.5%,
+    52.5%,
+    67.5% {
+      transform: translateY(-6px) rotate(-6deg);
+    }
+    45%,
+    60%,
+    75% {
+      transform: translateY(6px) rotate(6deg);
+    }
+  }
+  @keyframes ph-shake-trail {
+    0%,
+    30%,
+    85%,
+    100% {
+      opacity: 0;
+    }
+    40%,
+    75% {
+      opacity: 1;
+    }
+  }
+
+  /* ---------- the casting pad ---------- */
+  .ph-pad-wrap {
+    --sc: var(--color-lavender);
+    --sg: var(--color-gold-hi);
+    --swing: 0;
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: 4px 0;
+  }
+  .ph-pad {
+    --size: min(66vw, 270px, calc(100dvh - 520px));
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: max(170px, var(--size));
+    aspect-ratio: 1;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    color: var(--color-ink);
+    background:
+      radial-gradient(
+        circle,
+        color-mix(in srgb, var(--sc) 22%, #120f2a) 0%,
+        #0c0a20 62%,
+        transparent 63%
+      ),
+      radial-gradient(
+        circle,
+        transparent 64%,
+        color-mix(in srgb, var(--sc) 35%, transparent) 70%,
+        transparent 74%
+      );
+    -webkit-touch-callout: none;
+    touch-action: none;
+    transition:
+      transform 0.2s cubic-bezier(0.3, 1.5, 0.5, 1),
+      filter 0.3s;
+  }
+  .ph-pad:focus-visible {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 6px;
+  }
+  .ph-pad-runes {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    fill: none;
+    overflow: visible;
+  }
+  .ph-pad-runes .outer {
+    stroke: #fadc98;
+    stroke-width: 1.5;
+    filter: drop-shadow(0 0 4px rgba(250, 220, 152, 0.6));
+  }
+  .ph-pad-runes .ticks {
+    stroke: color-mix(in srgb, var(--sg) 70%, white);
+    stroke-width: 5;
+    stroke-dasharray: 0.8 6;
+    transform-origin: 100px 100px;
+    opacity: 0.55;
+  }
+  .ph-pad-runes .tri {
+    stroke: rgba(250, 220, 152, 0.4);
+    stroke-width: 0.8;
+    transform-origin: 100px 100px;
+  }
+  /* The swing fills this ring while the pad is held. */
+  .ph-pad-runes .fill {
+    stroke: var(--sg);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: calc(100 - var(--swing) * 100);
+    transform: rotate(-90deg);
+    transform-origin: 100px 100px;
+    filter: drop-shadow(0 0 6px var(--sg));
+    transition: stroke-dashoffset 0.08s linear;
+  }
+  /* The voice rings the pad as a glow that swells with loudness. */
+  .ph-pad-voice {
+    --voice: 0;
+    position: absolute;
+    inset: -6%;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow:
+      0 0 0 calc(2px + var(--voice) * 10px)
+        color-mix(in srgb, var(--sc) 45%, transparent),
+      0 0 calc(10px + var(--voice) * 40px)
+        color-mix(in srgb, var(--sg) 60%, transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .ph-pad-core {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 64%;
+    text-align: center;
+  }
+  .ph-pad-icon {
+    width: 46%;
+    aspect-ratio: 1;
+    color: var(--sg);
+    filter: drop-shadow(
+      0 0 12px color-mix(in srgb, var(--sc) 80%, transparent)
+    );
+    transition: transform 0.3s cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .ph-pad-prompt {
+    font: 600 0.7rem var(--font-label);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-gold-hi);
+  }
+  .ph-pad-wrap.holding .ph-pad {
+    transform: scale(0.96);
+  }
+  .ph-pad-wrap.holding .ph-pad-runes .ticks {
+    opacity: 1;
+    animation: spin 3s linear infinite;
+  }
+  .ph-pad-wrap.holding .ph-pad-runes .tri {
+    animation: spin 6s linear infinite reverse;
+  }
+  .ph-pad-wrap.holding .ph-pad-voice {
+    opacity: 1;
+  }
+  .ph-pad-wrap.holding.hearing .ph-pad-voice {
+    --voice: 0.55;
+    animation: ph-voice 0.5s ease-in-out infinite alternate;
+  }
+  @keyframes ph-voice {
+    to {
+      --voice: 0.9;
+    }
+  }
+  .ph-pad-wrap.holding .ph-pad-icon {
+    transform: scale(1.12);
+  }
+  /* The word was heard: the circle flashes in that spell's colours, ready for the swing. */
+  .ph-pad-wrap.locked .ph-pad {
+    animation: ph-locked 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .ph-pad-wrap.locked .ph-pad-runes .outer {
+    stroke: var(--sg);
+    stroke-width: 3;
+    filter: drop-shadow(0 0 10px var(--sg));
+  }
+  .ph-pad-wrap.locked .ph-pad-prompt {
+    color: #fff4d2;
+    text-shadow: 0 0 12px var(--sg);
+  }
+  @keyframes ph-locked {
+    40% {
+      filter: brightness(1.7);
+      transform: scale(1);
+    }
+  }
+  .ph-pad-wrap.judging .ph-pad-runes .ticks {
+    opacity: 1;
+    animation: spin 1s linear infinite;
+  }
+  .ph-pad-wrap.judging .ph-pad {
+    filter: brightness(1.2);
+  }
+  /* The cast's burst, in the spell's colours. */
+  .ph-pad-burst {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 60%;
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 2;
+    animation: ph-burst 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
+  .ph-pad-burst.full {
+    background: radial-gradient(
+      circle,
+      #fff8e6 0%,
+      var(--sg) 25%,
+      var(--sc) 50%,
+      transparent 70%
+    );
+  }
+  .ph-pad-burst.weak {
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--sg) 80%, transparent) 0%,
+      transparent 60%
+    );
+    animation-duration: 0.7s;
+  }
+  .ph-pad-burst.missed {
+    background: radial-gradient(
+      circle,
+      rgba(255, 156, 138, 0.35) 0%,
+      transparent 60%
+    );
+    animation-duration: 0.5s;
+  }
+  @keyframes ph-burst {
+    from {
+      opacity: 1;
+      transform: scale(0.4);
+    }
+    to {
+      opacity: 0;
+      transform: scale(2.4);
+    }
+  }
+
+  /* ---------- move buttons (no motion sensor) ---------- */
+  .ph-move-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .ph-move-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 8px 14px;
+    font: 600 0.68rem var(--font-label);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-gold-hi);
+    background: radial-gradient(
+      100% 80% at 50% 20%,
+      rgba(71, 40, 110, 0.55),
+      rgba(10, 12, 30, 0.9)
+    );
+    border: 1px solid rgba(250, 220, 152, 0.45);
+    border-radius: 999px 999px 8px 8px / 60px 60px 8px 8px;
+    cursor: pointer;
+    touch-action: none;
+    -webkit-touch-callout: none;
+    transition:
+      transform 0.15s,
+      box-shadow 0.2s;
+  }
+  .ph-move-button svg {
+    width: 64px;
+    height: 64px;
+  }
+  .ph-move-button:active {
+    transform: scale(0.95);
+    box-shadow: 0 0 24px rgba(250, 220, 152, 0.45);
+  }
+
+  /* ---------- the verdict ---------- */
+  .ph-cast-result {
+    min-height: 92px;
+  }
+  .ph-cast-hint {
+    margin: 0;
+    text-align: center;
+    font-style: italic;
+    color: var(--color-ink-dim);
+  }
+  .ph-verdict {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+    animation: ph-enter 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .ph-verdict p {
+    margin: 0;
+  }
+  .ph-verdict-title {
+    font: 700 1.35rem var(--font-label);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .ph-verdict.full .ph-verdict-title {
+    background: var(--ph-gold-face);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 0 14px rgba(250, 220, 152, 0.55));
+  }
+  .ph-verdict.weak .ph-verdict-title {
+    color: var(--color-lavender);
+  }
+  .ph-verdict.missed .ph-verdict-title {
+    color: var(--color-danger);
+  }
+  .ph-verdict-detail {
+    font-size: 1.05rem;
+    line-height: 1.35;
+    color: var(--color-ink);
+  }
+  /* "Heard / Felt": kept small, for when something needs troubleshooting. */
+  .ph-verdict-evidence {
+    margin-top: 4px !important;
+    font-size: 0.82rem;
+    color: var(--color-ink-dim);
+    opacity: 0.75;
+  }
+  .ph-streak {
+    display: inline-block;
+    margin-left: 10px;
+    padding: 2px 9px;
+    font: 900 1rem var(--font-title);
+    letter-spacing: 0.04em;
+    vertical-align: 0.2em;
+    color: #1d1003;
+    background: var(--ph-gold-face);
+    border-radius: 999px;
+    box-shadow: 0 0 16px rgba(250, 220, 152, 0.7);
+    animation: ph-stamp 0.45s cubic-bezier(0.3, 1.6, 0.4, 1) both;
+  }
+  .ph-help {
+    --sc: var(--color-lavender);
+    --sg: var(--color-gold-hi);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+    padding: 10px 14px;
+    text-align: left;
+    border: 1px solid color-mix(in srgb, var(--sg) 50%, transparent);
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--sc) 14%, rgba(10, 12, 30, 0.85));
+    animation: ph-enter 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .ph-help p {
+    margin: 0;
+    font-size: 1.02rem;
+    line-height: 1.35;
+    color: var(--color-ink);
+  }
+  .ph-help-glyph {
+    flex: none;
+    width: 64px;
+    height: 64px;
+  }
+  .ph-ready-banner {
+    margin-top: 6px !important;
+    padding: 8px 14px;
+    font: 700 0.78rem var(--font-label);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #1d1003;
+    background: var(--ph-gold-face);
+    border-radius: 2px;
+    box-shadow: 0 0 24px rgba(250, 220, 152, 0.55);
+    animation: ph-stamp 0.5s cubic-bezier(0.3, 1.6, 0.4, 1) both;
+  }
+  .ph-verdict-evidence b {
+    font-weight: 600;
+    color: var(--color-cyan);
+  }
+  .ph-next-spell.btn {
+    width: auto;
+    margin-top: 8px;
+  }
+  .ph-voice-line {
+    margin: 0;
+    text-align: center;
+    font-size: 0.92rem;
+    font-style: italic;
+    color: rgba(196, 178, 255, 0.7);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .ph-scene,
     .ph-runes,
@@ -1853,8 +2523,23 @@
     .ph-seal-btn-ring,
     .ph-sigil.choosing .ph-sigil-ring,
     .ph-hold-art .thumb,
-    .ph-tabpanel {
+    .ph-tabpanel,
+    .ph-move .phone,
+    .ph-move .trail,
+    .ph-mastery span.lit,
+    .ph-mastered,
+    .ph-pad-runes .ticks,
+    .ph-pad-runes .tri,
+    .ph-pad-voice,
+    .ph-pad-wrap.locked .ph-pad,
+    .ph-streak,
+    .ph-help,
+    .ph-ready-banner,
+    .ph-verdict {
       animation: none;
+    }
+    .ph-pad-burst {
+      display: none;
     }
     .ph-arrival-sigil.sigil {
       --p: 1;
@@ -1869,4 +2554,11 @@
       transform: scale(0.86);
     }
   }
+}
+
+/* Lets the casting pad's voice glow swell smoothly. */
+@property --voice {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
 }

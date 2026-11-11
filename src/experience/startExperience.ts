@@ -54,15 +54,11 @@ export function startExperience() {
 
   const cameraDirector = createCameraDirector(context);
   const screenNavigator = createScreenNavigator(context, cameraDirector);
-  const { seatPlayer } = setUpLobby(context, screenNavigator);
+  const { seatPlayer, onRelayRoom } = setUpLobby(context, screenNavigator);
   setUpJoinForm(context, screenNavigator, seatPlayer);
-  const training = setUpTraining(context, screenNavigator);
+  setUpTraining(context, screenNavigator, onRelayRoom);
   setUpMenuFeedback(context);
-  const pollGamepad = setUpKeyboardAndGamepad(
-    context,
-    screenNavigator,
-    training,
-  );
+  const pollGamepad = setUpKeyboardAndGamepad(context, screenNavigator);
   const loadingOverlay = createLoadingOverlay(context);
 
   // Start on the next tick: React's development mode mounts twice, and the first mount is cancelled before this runs.
@@ -82,7 +78,6 @@ export function startExperience() {
         cameraDirector.prepareIntro(world);
         startFrameLoop(context, world, {
           cameraDirector,
-          training,
           pollGamepad,
           onFirstFrame: loadingOverlay.reveal,
         });
@@ -109,7 +104,6 @@ export function startExperience() {
     get room() {
       return context.room;
     },
-    train: training.round,
     get world() {
       return context.world;
     },

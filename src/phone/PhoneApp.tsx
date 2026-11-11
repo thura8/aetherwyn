@@ -24,8 +24,8 @@ import ArrivalScene from "./components/ArrivalScene";
 import { SoundIcon } from "./components/Glyphs";
 import JoinScene from "./components/JoinScene";
 import LobbyScene from "./components/LobbyScene";
+import PracticeScene from "./components/PracticeScene";
 import {
-  BigScreenScene,
   ClosedScene,
   HostAwayBanner,
   ReconnectingScene,
@@ -132,9 +132,9 @@ function PhoneScenes({
   } else if (room.phase.kind === "lobby") {
     sceneKey = "lobby";
     scene = <LobbyScene room={room} session={session} />;
-  } else if (room.phase.kind === "big-screen") {
-    sceneKey = "big-screen";
-    scene = <BigScreenScene room={room} />;
+  } else if (room.phase.kind === "practice") {
+    sceneKey = "practice";
+    scene = <PracticeScene session={session} />;
   } else {
     sceneKey = room.phase.kind;
     scene = <InRoomPlaceholder room={room} />;

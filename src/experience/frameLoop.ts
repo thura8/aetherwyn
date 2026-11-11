@@ -1,7 +1,6 @@
 import { createAdaptiveQuality } from "./adaptiveQuality";
 import type { CameraDirector } from "./cameraDirector";
 import type { ExperienceContext } from "./experienceContext";
-import type { TrainingScreen } from "./screens/training";
 import type { World } from "./world/createWorld";
 
 const MAX_FRAME_SECONDS = 0.05;
@@ -9,7 +8,6 @@ const HIT_STOP_TIME_SCALE = 0.15;
 
 interface FrameLoopParts {
   cameraDirector: CameraDirector;
-  training: TrainingScreen;
   pollGamepad: (now: number) => void;
   onFirstFrame: () => void;
 }
@@ -17,7 +15,7 @@ interface FrameLoopParts {
 export function startFrameLoop(
   context: ExperienceContext,
   world: World,
-  { cameraDirector, training, pollGamepad, onFirstFrame }: FrameLoopParts,
+  { cameraDirector, pollGamepad, onFirstFrame }: FrameLoopParts,
 ) {
   const { lifecycle, sound } = context;
   const adaptQuality = createAdaptiveQuality();
@@ -38,7 +36,6 @@ export function startFrameLoop(
     const time = world.state.time;
     cameraDirector.updateIntroIgnition(world, time);
     cameraDirector.updateCamera(world, time);
-    if (context.screen === "training") training.update(world, delta);
     pollGamepad(now);
     world.render();
     // the loading screen fades only once the first real frame is on screen

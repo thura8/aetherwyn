@@ -17,7 +17,7 @@ export interface Seat {
 export interface CastVerdict {
   spell: SpellId | null;
   power: "full" | "weak" | "none";
-  /** Why nothing was cast (no word heard, too late…). */
+  /** Why nothing was cast, or (for a weak cast) the one thing that would make it full power. */
   reason?: string;
 }
 
@@ -26,19 +26,10 @@ export interface CastAttempt {
   move: MoveId | null;
   /** Milliseconds from the prompt to release. */
   reactionMs: number;
-}
-
-export interface TrainingRound {
-  spell: SpellId;
-  index: number;
-  count: number;
-  stage: "prompt" | "casting" | "result";
-  /** Epoch ms when the current stage ends. */
-  endsAt: number;
-  result:
-    | (CastVerdict & { correct: boolean; reactionMs: number; points: number })
-    | null;
-  score: number;
+  /** This phone can't hear (voice off), so the move picks the spell instead of the word. */
+  voiceOff?: boolean;
+  /** The move sat between a raise and a shake: it counts as whichever the spoken spell needs. */
+  borderline?: boolean;
 }
 
 export interface Combatant {
@@ -81,14 +72,9 @@ export interface BattleState {
 
 export type Phase =
   | { kind: "lobby" }
-  | {
-      kind: "training";
-      round: TrainingRound;
-      summary: Record<string, number> | null;
-    }
   | { kind: "battle"; battle: BattleState }
-  /** The big screen is running something the phone has no screen for yet. */
-  | { kind: "big-screen"; activity: "training" }
+  /** Training: each player practises the spells at their own pace. */
+  | { kind: "practice" }
   | { kind: "closed"; reason: "host-closed" | "kicked" };
 
 export interface RoomSnapshot {
@@ -118,6 +104,13 @@ export interface RoomSession {
   selectWizard(wizard: WizardId): void;
   setReady(ready: boolean): void;
   chooseTarget(seatId: string): void;
+  /** Tells the big screen how a practice cast went (`spell` is the one being practised). */
+  reportPractice(
+    spell: SpellId,
+    power: CastVerdict["power"],
+    /** Full-power casts in a row, this one included (0 when it wasn't full power). */
+    streak: number,
+  ): void;
   cast(attempt: CastAttempt): CastVerdict;
   leave(): void;
   dispose(): void;

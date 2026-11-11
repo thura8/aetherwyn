@@ -1,3 +1,10 @@
+import {
+  fromIosRotation,
+  type MotionSample,
+  type Vec3,
+} from "./motion/motionSample";
+import { isIosWebKit } from "./platform";
+
 /*
  * Motion and microphone access for the wand. Browsers only grant both on secure (https) pages,
  * and iPhone only shows its motion prompt from inside a tap, so request() must run in a tap handler.
@@ -27,11 +34,19 @@ let initialised = false;
 
 /** 0..1, smoothed. Read these from requestAnimationFrame loops. */
 export const levels = { motion: 0, mic: 0 };
-/** The latest acceleration without gravity, in m/s², for move detection. */
+/** The latest acceleration without gravity, in m/s². */
 export const motionSample = { x: 0, y: 0, z: 0, at: 0 };
 const motionListeners = new Set<(sample: typeof motionSample) => void>();
 
+/** Readings kept for the cast being held, or null between casts. */
+let recording: MotionSample[] | null = null;
+/** About ten seconds of readings: a cast never needs more. */
+const MAX_RECORDED = 1000;
+/** The move signal (|rotation| + 20·|push|) at which the motion meter reads full. */
+const FULL_LEVEL = 400;
+
 let micStream: MediaStream | null = null;
+let micAudio: AudioContext | null = null;
 let micAnalyser: AnalyserNode | null = null;
 let micBuffer: Uint8Array<ArrayBuffer> | null = null;
 let micFrame = 0;
@@ -87,30 +102,74 @@ export function onMotionSample(
   return () => motionListeners.delete(listener);
 }
 
+const isNumber = (n: number | null | undefined): n is number =>
+  typeof n === "number";
+const vector = (v: DeviceMotionEventAcceleration | null): Vec3 | null =>
+  v && isNumber(v.x) && isNumber(v.y) && isNumber(v.z) ? [v.x, v.y, v.z] : null;
+
 let motionStarted = false;
 function startMotion() {
   if (motionStarted) return;
   motionStarted = true;
-  let sawEvent = false;
+  const ios = isIosWebKit();
+  let lastTime: number | null = null;
   window.addEventListener("devicemotion", (event) => {
-    const a = event.acceleration ?? event.accelerationIncludingGravity;
-    if (!a) return;
-    if (!sawEvent) {
-      sawEvent = true;
-      set({ motion: "granted" });
+    const rate = event.rotationRate;
+    const withGravity = vector(event.accelerationIncludingGravity);
+    // Only a gyroscope reading means a usable wand (laptops fire empty events).
+    if (
+      !rate ||
+      !isNumber(rate.alpha) ||
+      !isNumber(rate.beta) ||
+      !isNumber(rate.gamma) ||
+      !withGravity
+    )
+      return;
+    if (state.motion !== "granted") set({ motion: "granted" });
+    const dtMs = lastTime === null ? 0 : event.timeStamp - lastTime;
+    lastTime = event.timeStamp;
+
+    const acceleration = vector(event.acceleration);
+    const push = acceleration
+      ? Math.hypot(...acceleration)
+      : Math.abs(Math.hypot(...withGravity) - 9.81);
+    const turn = Math.hypot(rate.alpha, rate.beta, rate.gamma);
+    levels.motion = Math.max(
+      levels.motion * 0.82,
+      Math.min(1, (turn + 20 * push) / FULL_LEVEL),
+    );
+
+    if (recording && recording.length < MAX_RECORDED) {
+      const reported = {
+        alpha: rate.alpha,
+        beta: rate.beta,
+        gamma: rate.gamma,
+      };
+      recording.push({
+        rotationRate: ios ? fromIosRotation(reported) : reported,
+        acceleration,
+        accelerationIncludingGravity: withGravity,
+        dtMs,
+      });
     }
-    motionSample.x = a.x ?? 0;
-    motionSample.y = a.y ?? 0;
-    motionSample.z = a.z ?? 0;
+
+    const [x, y, z] = acceleration ?? [0, 0, 0];
+    motionSample.x = x;
+    motionSample.y = y;
+    motionSample.z = z;
     motionSample.at = performance.now();
-    const magnitude = event.acceleration
-      ? Math.hypot(motionSample.x, motionSample.y, motionSample.z)
-      : Math.abs(
-          Math.hypot(motionSample.x, motionSample.y, motionSample.z) - 9.81,
-        );
-    levels.motion = Math.max(levels.motion * 0.82, Math.min(1, magnitude / 18));
     motionListeners.forEach((listener) => listener(motionSample));
   });
+}
+
+/** Starts keeping motion readings for a cast; the returned function stops and hands them over. */
+export function startRecording(): () => MotionSample[] {
+  recording = [];
+  return () => {
+    const kept = recording ?? [];
+    recording = null;
+    return kept;
+  };
 }
 
 /** Asks for motion. Call from a tap: iPhone ignores the request otherwise. */
@@ -155,6 +214,7 @@ export async function requestMic() {
       (window as unknown as { webkitAudioContext?: typeof AudioContext })
         .webkitAudioContext;
     const audio = new AudioContextClass();
+    micAudio = audio;
     const source = audio.createMediaStreamSource(micStream);
     micAnalyser = audio.createAnalyser();
     micAnalyser.fftSize = 512;
@@ -177,4 +237,19 @@ export async function requestMic() {
     set({ mic: "denied" });
     return "denied";
   }
+}
+
+/**
+ * Closes the level meter's microphone stream (access stays granted). A speech recogniser then
+ * has the microphone to itself: on iPhone, two at once can leave the recogniser hearing nothing.
+ */
+export function releaseMicMeter() {
+  cancelAnimationFrame(micFrame);
+  micStream?.getTracks().forEach((track) => track.stop());
+  void micAudio?.close();
+  micStream = null;
+  micAudio = null;
+  micAnalyser = null;
+  micBuffer = null;
+  levels.mic = 0;
 }

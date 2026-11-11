@@ -12,6 +12,9 @@ import {
   type RelayResult,
   type RelayRoom,
   type RelaySeat,
+  PRACTICE_SPELL_IDS,
+  emptyPractice,
+  type PracticeSpellId,
 } from "@/shared/relay";
 
 /*
@@ -144,6 +147,8 @@ function seatPlayer(
   rawName: unknown,
   isTest: boolean,
   wizard?: unknown,
+  /** Seated from the big screen itself, so there's no phone connection to wait for. */
+  present = false,
 ): RelayResult {
   if (room.phase !== "lobby") return fail("not-in-lobby");
   const name = cleanName(rawName);
@@ -164,8 +169,9 @@ function seatPlayer(
     wizard: chosen,
     ready: isTest,
     isTest,
-    connected: isTest,
+    connected: isTest || present,
     lostAt: null,
+    practice: emptyPractice(),
   };
   room.seats[index] = seat;
   changed(room);
@@ -179,7 +185,13 @@ export function applyAction(code: string, action: RelayAction): RelayResult {
 
   switch (action?.type) {
     case "join":
-      return seatPlayer(room, action.name, false, action.wizard);
+      return seatPlayer(
+        room,
+        action.name,
+        false,
+        action.wizard,
+        action.present === true,
+      );
     case "addTest":
       return seatPlayer(room, action.name, true, undefined);
     case "selectWizard":
@@ -224,6 +236,9 @@ export function applyAction(code: string, action: RelayAction): RelayResult {
       room.phase = "training";
       lostTimers(room).forEach(clearTimeout);
       lostTimers(room).clear();
+      room.seats.forEach((seat) => {
+        if (seat) seat.practice = emptyPractice();
+      });
       changed(room);
       return { ok: true };
     case "backToLobby":
@@ -239,6 +254,29 @@ export function applyAction(code: string, action: RelayAction): RelayResult {
       });
       changed(room);
       return { ok: true };
+    case "practiceCast": {
+      const seat = findSeat(room, action.seatId);
+      if (!seat) return fail("no-seat");
+      if (room.phase !== "training") return fail("bad-request");
+      const spell = PRACTICE_SPELL_IDS.includes(action.spell as PracticeSpellId)
+        ? (action.spell as PracticeSpellId)
+        : null;
+      const power =
+        action.power === "full" || action.power === "weak"
+          ? action.power
+          : "missed";
+      // Seats from before a hot reload may not have a tally yet.
+      seat.practice ??= emptyPractice();
+      // A refused cast still counts as practice, against the spell the phone was practising.
+      if (spell) seat.practice.casts[spell][power] += 1;
+      const streak =
+        power === "full" && Number.isInteger(action.streak)
+          ? Math.max(0, Math.min(99, action.streak ?? 0))
+          : 0;
+      seat.practice.last = { spell, power, streak, at: Date.now() };
+      changed(room);
+      return { ok: true };
+    }
     default:
       return fail("bad-request");
   }

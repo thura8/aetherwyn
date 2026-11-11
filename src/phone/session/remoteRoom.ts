@@ -13,12 +13,17 @@ import type {
   RoomSnapshot,
 } from "@/phone/session/types";
 import {
+  PRACTICE_SPELL_IDS,
   ROOM_CODE_PATTERN,
   roomUrl,
   sendRelayAction,
+  type PracticeSpellId,
   type RelayError,
   type RelayRoom,
 } from "@/shared/relay";
+
+const isPracticeSpell = (id: string): id is PracticeSpellId =>
+  (PRACTICE_SPELL_IDS as readonly string[]).includes(id);
 
 /*
  * The phone's seat in a real room, relayed through this app's own server (src/app/api/rooms):
@@ -59,7 +64,7 @@ function toSnapshot(room: RelayRoom, seatId: string): RoomSnapshot {
         : !seated
           ? { kind: "closed", reason: "kicked" }
           : room.phase === "training"
-            ? { kind: "big-screen", activity: "training" }
+            ? { kind: "practice" }
             : { kind: "lobby" },
   };
 }
@@ -95,6 +100,8 @@ export function createRemoteRoom(): RoomSession {
 
   function end(phase: "host-closed" | "kicked") {
     disconnect();
+    // Forget the seat too, so coming back to the tab doesn't try to rejoin it.
+    seat = null;
     if (snapshot)
       snapshot = { ...snapshot, phase: { kind: "closed", reason: phase } };
     emit();
@@ -219,6 +226,16 @@ export function createRemoteRoom(): RoomSession {
     },
     chooseTarget() {
       /* Battles arrive with gate 4. */
+    },
+    reportPractice(spell, power, streak) {
+      if (!seat || !isPracticeSpell(spell)) return;
+      void sendRelayAction(seat.code, {
+        type: "practiceCast",
+        seatId: seat.seatId,
+        spell,
+        power: power === "none" ? "missed" : power,
+        streak,
+      });
     },
     cast: (attempt) => judgeCast(attempt),
     leave() {

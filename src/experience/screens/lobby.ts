@@ -105,6 +105,9 @@ export function setUpLobby(
   /** True while the relay holds the room; false means local-only. */
   let live = false;
   let relayPhase: RelayRoom["phase"] = "lobby";
+  /** The relay's latest room, and who else wants it (the practice board). */
+  let latestRelayRoom: RelayRoom | null = null;
+  const relayListeners = new Set<(room: RelayRoom) => void>();
 
   function renderSlots(room: Room) {
     const list = elementById("slots");
@@ -242,6 +245,7 @@ export function setUpLobby(
     const room = context.room;
     if (!room || relay.code !== room.code) return;
     relayPhase = relay.phase;
+    latestRelayRoom = relay;
     const before = new Map(
       room.players.flatMap((player) => (player ? [[player.id, player]] : [])),
     );
@@ -282,6 +286,7 @@ export function setUpLobby(
       );
     }
     refreshLobby();
+    relayListeners.forEach((listener) => listener(relay));
   }
 
   function followRelay(code: string) {
@@ -363,7 +368,7 @@ export function setUpLobby(
       room.code,
       isTestWizard
         ? { type: "addTest", name }
-        : { type: "join", name, wizard: wizardClass },
+        : { type: "join", name, wizard: wizardClass, present: true },
     );
     if (!result.ok) return result;
     // A wizard joining from this device counts as present and ready.
@@ -439,5 +444,14 @@ export function setUpLobby(
     screenNavigator.goTo("title");
   });
 
-  return { seatPlayer };
+  return {
+    seatPlayer,
+    /** Follows the room as the relay sends it; called at once with the latest room, if any. */
+    onRelayRoom(listener: (room: RelayRoom) => void) {
+      relayListeners.add(listener);
+      if (latestRelayRoom && latestRelayRoom.code === context.room?.code)
+        listener(latestRelayRoom);
+      return () => relayListeners.delete(listener);
+    },
+  };
 }

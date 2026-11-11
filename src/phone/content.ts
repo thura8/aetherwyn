@@ -18,11 +18,11 @@ export type SpellId =
   | "disarming-pulse";
 
 export type MoveId =
-  | "flick-up"
+  | "raise"
   | "flick-down"
   | "flick-right"
   | "flick-left"
-  | "shake-up-down"
+  | "shake"
   | "shake-side";
 
 export type SpellIcon = "fire" | "ice" | "bolt" | "vortex" | "shield" | "pulse";
@@ -32,6 +32,8 @@ export interface Spell {
   name: string;
   /** The word the player shouts. It picks the spell. */
   word: string;
+  /** How speech recognisers tend to write the word down, so those still count. */
+  heardAs: readonly string[];
   move: MoveId;
   kind: "Attack" | "Defence" | "Control" | "Counter";
   description: string;
@@ -51,10 +53,10 @@ export interface Move {
 }
 
 export const MOVES: Record<MoveId, Move> = {
-  "flick-up": {
-    id: "flick-up",
-    name: "Flick Up",
-    instruction: "Snap your wrist up",
+  raise: {
+    id: "raise",
+    name: "Raise",
+    instruction: "Lift the phone up, like raising a torch",
   },
   "flick-down": {
     id: "flick-down",
@@ -71,10 +73,11 @@ export const MOVES: Record<MoveId, Move> = {
     name: "Flick Left",
     instruction: "Snap the phone left, like swinging a door",
   },
-  "shake-up-down": {
-    id: "shake-up-down",
-    name: "Shake Up & Down",
-    instruction: "Shake the phone up and down a few times",
+  shake: {
+    id: "shake",
+    name: "Shake",
+    instruction:
+      "Shake the phone two or three times, like rattling up a shield",
   },
   "shake-side": {
     id: "shake-side",
@@ -89,7 +92,34 @@ export const SPELLS: readonly Spell[] = [
     id: "flame-burst",
     name: "Flame Burst",
     word: "Fire",
-    move: "flick-up",
+    // What phone dictation writes for a shouted "Fire!" (practice is forgiving on purpose).
+    heardAs: [
+      "fyre",
+      "fires",
+      "fired",
+      "fiery",
+      "fia",
+      "far",
+      "fear",
+      "fair",
+      "fur",
+      "fi",
+      "five",
+      "higher",
+      "hire",
+      "hi",
+      "buyer",
+      "flyer",
+      "friar",
+      "tire",
+      "tyre",
+      "wire",
+      "fight",
+      "fine",
+      "phi",
+      "pyre",
+    ],
+    move: "raise",
     kind: "Attack",
     description: "An eruption of violet and golden flame.",
     icon: "fire",
@@ -104,6 +134,7 @@ export const SPELLS: readonly Spell[] = [
     id: "frost-bind",
     name: "Frost Bind",
     word: "Ice",
+    heardAs: ["ise", "ices", "iced", "eyes"],
     move: "flick-down",
     kind: "Control",
     description: "Ice crystals that hold a target in place.",
@@ -119,6 +150,7 @@ export const SPELLS: readonly Spell[] = [
     id: "arcane-bolt",
     name: "Arcane Bolt",
     word: "Zap",
+    heardAs: ["zapp", "zaps", "zapped", "sap"],
     move: "flick-right",
     kind: "Attack",
     description: "A fast bolt of raw arcane energy.",
@@ -134,6 +166,7 @@ export const SPELLS: readonly Spell[] = [
     id: "astral-wave",
     name: "Astral Wave",
     word: "Wave",
+    heardAs: ["waves", "waved", "wayve"],
     move: "flick-left",
     kind: "Attack",
     description: "A sweeping wave of starlight across the arena.",
@@ -149,7 +182,32 @@ export const SPELLS: readonly Spell[] = [
     id: "mystic-shield",
     name: "Mystic Shield",
     word: "Shield",
-    move: "shake-up-down",
+    // What phone dictation writes for a shouted "Shield!" ("she'll" splits into "she" + "ll").
+    heardAs: [
+      "sheild",
+      "shields",
+      "shielded",
+      "she",
+      "shed",
+      "shes",
+      "see",
+      "sea",
+      "si",
+      "shi",
+      "shell",
+      "sheila",
+      "shelled",
+      "chilled",
+      "child",
+      "field",
+      "feel",
+      "filled",
+      "seal",
+      "sealed",
+      "sheet",
+      "sheep",
+    ],
+    move: "shake",
     kind: "Defence",
     description: "A rune-carved dome that wards off incoming spells.",
     icon: "shield",
@@ -164,6 +222,7 @@ export const SPELLS: readonly Spell[] = [
     id: "disarming-pulse",
     name: "Disarming Pulse",
     word: "Stop",
+    heardAs: ["stopp", "stops", "stopped"],
     move: "shake-side",
     kind: "Counter",
     description: "A golden ring that cancels an opponent's spell.",
@@ -175,6 +234,12 @@ export const SPELLS: readonly Spell[] = [
     colour: "#f2c45e",
     glow: "#94e1f3",
   },
+];
+
+/** The spells players practise for now; the other four come with battles. */
+export const PRACTICE_SPELLS: readonly SpellId[] = [
+  "flame-burst",
+  "mystic-shield",
 ];
 
 const spellsById = new Map(SPELLS.map((spell) => [spell.id, spell]));

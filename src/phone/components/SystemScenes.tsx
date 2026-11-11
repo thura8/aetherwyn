@@ -2,7 +2,6 @@
 
 import MagicButton from "@/components/MagicButton";
 import Sigil from "@/components/Sigil";
-import type { RoomSnapshot } from "@/phone/session/types";
 import { FiligreeFrame, GemDivider } from "./Glyphs";
 
 /** Shown while a stored session finds its way back to the room. */
@@ -68,22 +67,6 @@ export function HostAwayBanner() {
     <div className="ph-banner" role="status">
       <span className="ph-banner-dot" aria-hidden="true" />
       The host has stepped away. Waiting for the big screen…
-    </div>
-  );
-}
-
-/** Holds the phone while the big screen runs a mode the phone has no screen for yet. */
-export function BigScreenScene({ room }: { room: RoomSnapshot }) {
-  const you = room.seats.find((seat) => seat.id === room.youId);
-  return (
-    <div className="ph-system" role="status">
-      <Sigil idPrefix="ph-bigscreen" className="ph-system-sigil" />
-      <p className="eyebrow">Room {room.code}</p>
-      <h1 className="ph-heading">The duel begins on the big screen</h1>
-      <p className="ph-lead">
-        {you?.name ? `${you.name}, look` : "Look"} to the arena. Your wand will
-        wake when it&rsquo;s your turn to cast.
-      </p>
     </div>
   );
 }

@@ -1,34 +1,21 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { type CSSProperties, type ReactNode } from "react";
 import {
-  levels,
   requestMic,
   requestMotion,
   type AccessState,
 } from "@/phone/casting/mediaAccess";
 import { useMediaAccess } from "@/phone/casting/useMediaAccess";
+import {
+  readMicLevel,
+  readMotionLevel,
+  useLiveLevel,
+} from "@/phone/casting/useLiveLevel";
 import { useFeedback } from "@/phone/feedback";
 import { CheckRune, FiligreeFrame } from "./Glyphs";
+import VoiceCheck from "./VoiceCheck";
 
-/** Paints a live level (0..1) into --level on the element, every frame, without re-rendering. */
-function useLevel(read: () => number, active: boolean) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!active) return;
-    let frame = 0;
-    const tick = () => {
-      ref.current?.style.setProperty("--level", read().toFixed(3));
-      frame = requestAnimationFrame(tick);
-    };
-    tick();
-    return () => cancelAnimationFrame(frame);
-  }, [read, active]);
-  return ref;
-}
-
-const readMotion = () => levels.motion;
-const readMic = () => levels.mic;
 const BARS = 16;
 
 const STATUS: Record<Exclude<AccessState, "unknown">, string> = {
@@ -97,8 +84,8 @@ function Step({
 export default function WandSetup() {
   const access = useMediaAccess();
   const { sound, haptic } = useFeedback();
-  const motionMeter = useLevel(readMotion, access.motion === "granted");
-  const micMeter = useLevel(readMic, access.mic === "granted");
+  const motionMeter = useLiveLevel(readMotionLevel, access.motion === "granted");
+  const micMeter = useLiveLevel(readMicLevel, access.mic === "granted");
 
   const afterRequest = (result: AccessState) => {
     if (result === "granted") {
@@ -168,7 +155,7 @@ export default function WandSetup() {
         state={access.mic}
         idle="Not yet attuned"
         action="Attune"
-        hint="Shout “Fire!” and watch the runes rise."
+        hint="Hold the button, say “Fire!” and let go: the phone checks it can hear the spell words."
         deniedHint="The microphone was refused. Allow it for this site in your browser's settings, then reload."
         onRequest={() => void requestMic().then(afterRequest)}
       >
@@ -187,10 +174,11 @@ export default function WandSetup() {
             />
           ))}
         </div>
+        <VoiceCheck />
       </Step>
 
       <p className="ph-foot">
-        You&rsquo;ll practise every spell in training before the duel.
+        You&rsquo;ll practise Fire and Shield in training before the duel.
       </p>
     </section>
   );

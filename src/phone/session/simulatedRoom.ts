@@ -24,15 +24,14 @@ import { ROOM_CODE_PATTERN } from "@/shared/relay";
 
 /*
  * A stand-in for the game server, so the phone can be played and reviewed on its own.
- * Bots fill the other seats and a pretend host starts training, then a battle, once everyone is ready.
+ * Bots fill the other seats and a pretend host starts spell practice once everyone is ready.
  * Swap it for a socket-backed RoomSession when the server lands; screens only see RoomSession.
  */
 
 export type DemoStage =
+  | "practice"
   | "lobby"
   | "ready"
-  | "training"
-  | "summary"
   | "battle"
   | "target"
   | "results"
@@ -41,10 +40,9 @@ export type DemoStage =
   | "kicked";
 
 export const DEMO_STAGES: readonly DemoStage[] = [
+  "practice",
   "lobby",
   "ready",
-  "training",
-  "summary",
   "battle",
   "target",
   "results",
@@ -54,14 +52,9 @@ export const DEMO_STAGES: readonly DemoStage[] = [
 ];
 
 const BOT_NAMES = ["Orin", "Sela", "Bram"];
-const TRAINING_SPELLS = 4;
 const TIMING = {
   join: 900,
   hostStarts: 3200,
-  trainingPrompt: 2200,
-  trainingCast: 9000,
-  trainingResult: 2600,
-  summary: 7000,
   roundIntro: 2600,
   battleCast: 15000,
   resolving: 2200,
@@ -83,7 +76,6 @@ export function createSimulatedRoom({
   let connection: ConnectionState = "idle";
   const listeners = new Set<() => void>();
   const timers = new Set<ReturnType<typeof setTimeout>>();
-  let castOpenedAt = 0;
 
   const emit = () => listeners.forEach((listener) => listener());
   const after = (ms: number, run: () => void) => {
@@ -166,7 +158,7 @@ export function createSimulatedRoom({
         snapshot?.phase.kind === "lobby" &&
         snapshot.seats.every((seat) => seat.ready)
       )
-        startTraining();
+        startPractice();
     });
   }
 
@@ -182,118 +174,11 @@ export function createSimulatedRoom({
     }));
   }
 
-  /* ---------- training ---------- */
+  /* ---------- practice ---------- */
 
-  const trainingOrder = () =>
-    SPELLS.slice(0, TRAINING_SPELLS).map((spell) => spell.id);
-
-  function startTraining(index = 0, score = 0) {
-    const spells = trainingOrder();
-    if (index >= spells.length) {
-      const summary: Record<string, number> = {};
-      snapshot!.seats.forEach((seat) => {
-        summary[seat.id] =
-          seat.id === snapshot!.youId
-            ? score
-            : 120 + Math.round(Math.random() * 260);
-      });
-      setPhase({
-        kind: "training",
-        summary,
-        round: {
-          spell: spells[spells.length - 1],
-          index: spells.length - 1,
-          count: spells.length,
-          stage: "result",
-          endsAt: Date.now(),
-          result: null,
-          score,
-        },
-      });
-      after(TIMING.summary, startBattle);
-      return;
-    }
-    const spell = spells[index];
-    setPhase({
-      kind: "training",
-      summary: null,
-      round: {
-        spell,
-        index,
-        count: spells.length,
-        stage: "prompt",
-        endsAt: Date.now() + TIMING.trainingPrompt,
-        result: null,
-        score,
-      },
-    });
-    after(TIMING.trainingPrompt, () => {
-      castOpenedAt = Date.now();
-      updateTraining({
-        stage: "casting",
-        endsAt: Date.now() + TIMING.trainingCast,
-      });
-      after(TIMING.trainingCast, () => {
-        const phase = snapshot?.phase;
-        if (phase?.kind !== "training" || phase.round.stage !== "casting")
-          return;
-        updateTraining({
-          stage: "result",
-          endsAt: Date.now() + TIMING.trainingResult,
-          result: {
-            spell: null,
-            power: "none",
-            reason: "Time's up",
-            correct: false,
-            reactionMs: TIMING.trainingCast,
-            points: 0,
-          },
-        });
-        after(TIMING.trainingResult, () => startTraining(index + 1, score));
-      });
-    });
-  }
-
-  function updateTraining(
-    change: Partial<Extract<Phase, { kind: "training" }>["round"]>,
-  ) {
-    update((room) =>
-      room.phase.kind === "training"
-        ? {
-            ...room,
-            phase: { ...room.phase, round: { ...room.phase.round, ...change } },
-          }
-        : room,
-    );
-  }
-
-  function castInTraining(attempt: CastAttempt): CastVerdict {
-    const phase = snapshot!.phase;
-    if (phase.kind !== "training" || phase.round.stage !== "casting")
-      return judgeCast(attempt);
-    const verdict = judgeCast(attempt);
-    if (verdict.power === "none") return verdict;
-    const correct = verdict.spell === phase.round.spell;
-    const reactionMs = Date.now() - castOpenedAt;
-    const speedBonus = Math.max(
-      0,
-      Math.round((TIMING.trainingCast - reactionMs) / 60),
-    );
-    const points = correct
-      ? (verdict.power === "full" ? 100 : 50) + speedBonus
-      : 0;
-    const score = phase.round.score + points;
+  function startPractice() {
     clearTimers();
-    updateTraining({
-      stage: "result",
-      endsAt: Date.now() + TIMING.trainingResult,
-      result: { ...verdict, correct, reactionMs, points },
-      score,
-    });
-    after(TIMING.trainingResult, () =>
-      startTraining(phase.round.index + 1, score),
-    );
-    return verdict;
+    setPhase({ kind: "practice" });
   }
 
   /* ---------- battle ---------- */
@@ -363,7 +248,6 @@ export function createSimulatedRoom({
   function openCasting() {
     const state = battle();
     const opponents = opponentsOf(snapshot!.youId, state.combatants);
-    castOpenedAt = Date.now();
     setBattle({
       stage: "casting",
       endsAt: Date.now() + TIMING.battleCast,
@@ -569,18 +453,14 @@ export function createSimulatedRoom({
     if (bot1 && !bot1.wizard)
       updateSeat("bot-1", { wizard: freeWizards()[0].id, ready: true });
     switch (stage) {
+      case "practice":
+        startPractice();
+        break;
       case "lobby":
         updateSeat(me.id, { wizard: null });
         break;
       case "ready":
         updateSeat(me.id, { ready: true });
-        break;
-      case "training":
-        startTraining();
-        break;
-      case "summary":
-        startTraining(TRAINING_SPELLS, 340);
-        clearTimers();
         break;
       case "battle":
       case "target":
@@ -683,12 +563,14 @@ export function createSimulatedRoom({
       updateSeat(snapshot.youId, { ready });
       if (ready) maybeStart();
     },
+    reportPractice() {
+      /* The simulated big screen has no practice board. */
+    },
     chooseTarget(seatId) {
       if (snapshot?.phase.kind === "battle") setBattle({ target: seatId });
     },
     cast(attempt) {
       const phase = snapshot?.phase;
-      if (phase?.kind === "training") return castInTraining(attempt);
       if (phase?.kind === "battle") return castInBattle(attempt);
       return judgeCast(attempt);
     },

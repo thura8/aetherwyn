@@ -1,5 +1,36 @@
 import type { WizardClassId } from "@/experience/world/characters/wizardClasses";
 
+/** The spells practised in training, by id (kept in step with PRACTICE_SPELLS on the phone). */
+export const PRACTICE_SPELL_IDS = ["flame-burst", "mystic-shield"] as const;
+export type PracticeSpellId = (typeof PRACTICE_SPELL_IDS)[number];
+export type PracticePower = "full" | "weak" | "missed";
+
+export interface PracticeTally {
+  full: number;
+  weak: number;
+  missed: number;
+}
+
+/** One seat's spell practice: counts per spell, and the latest cast for the big screen to show. */
+export interface SeatPractice {
+  casts: Record<PracticeSpellId, PracticeTally>;
+  last: {
+    spell: PracticeSpellId | null;
+    power: PracticePower;
+    /** Full-power casts in a row, this one included. */
+    streak: number;
+    at: number;
+  } | null;
+}
+
+export const emptyPractice = (): SeatPractice => ({
+  casts: {
+    "flame-burst": { full: 0, weak: 0, missed: 0 },
+    "mystic-shield": { full: 0, weak: 0, missed: 0 },
+  },
+  last: null,
+});
+
 /*
  * The room relay's wire format, shared by the route handlers (src/app/api/rooms),
  * the big screen (src/experience/screens/lobby.ts) and the phone (src/phone/session/remoteRoom.ts).
@@ -27,6 +58,8 @@ export interface RelaySeat {
   connected: boolean;
   /** Epoch ms when this phone dropped off; null while connected. In the lobby the seat is freed LOST_SEAT_MS later. */
   lostAt: number | null;
+  /** Spell practice during training; reset when training begins. */
+  practice: SeatPractice;
 }
 
 export interface RelayRoom {
@@ -50,7 +83,13 @@ export type RelayError =
   | "bad-request";
 
 export type RelayAction =
-  | { type: "join"; name: string; wizard?: WizardClassId }
+  | {
+      type: "join";
+      name: string;
+      wizard?: WizardClassId;
+      /** Joined on the big screen itself ("Join from this device"): present, with no phone to lose. */
+      present?: boolean;
+    }
   | { type: "selectWizard"; seatId: string; wizard: WizardClassId }
   | { type: "setReady"; seatId: string; ready: boolean }
   | { type: "leave"; seatId: string }
@@ -58,7 +97,15 @@ export type RelayAction =
   | { type: "setWizard"; seatId: string; wizard: WizardClassId }
   | { type: "kick"; seatId: string }
   | { type: "begin" }
-  | { type: "backToLobby" };
+  | { type: "backToLobby" }
+  | {
+      type: "practiceCast";
+      seatId: string;
+      /** The spell cast, or null when nothing was (a refused cast). */
+      spell: PracticeSpellId | null;
+      power: PracticePower;
+      streak?: number;
+    };
 
 export type RelayResult =
   { ok: true; seatId?: string } | { ok: false; error: RelayError };

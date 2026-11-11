@@ -15,7 +15,6 @@ const REDUCED_MOTION_VIEW = {
 
 const easeInOutCubic = (x: number) =>
   x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
-const isPortrait = () => innerWidth / innerHeight < 0.9;
 const isNarrow = () => innerWidth <= 760;
 
 export function createCameraDirector(context: ExperienceContext) {
@@ -28,9 +27,6 @@ export function createCameraDirector(context: ExperienceContext) {
   const currentLook = new THREE.Vector3();
   const shotPosition = new THREE.Vector3();
   const shotLook = new THREE.Vector3();
-  const portalPosition = new THREE.Vector3();
-  const portalNormal = new THREE.Vector3();
-  const portalTangent = new THREE.Vector3();
   /** Scratch copy of the portal's position for the join shot, reused every frame. */
   const portalPoint = new THREE.Vector3();
 
@@ -54,8 +50,8 @@ export function createCameraDirector(context: ExperienceContext) {
     look: THREE.Vector3,
   ) {
     const name = context.screen;
-    const mouseX = name === "training" ? 0 : mouse.x;
-    const mouseY = name === "training" ? 0 : mouse.y;
+    const mouseX = mouse.x;
+    const mouseY = mouse.y;
     if (name === "title") {
       const angle = Math.sin(time * 0.05) * 0.2 + mouseX * 0.16;
       position.set(
@@ -64,7 +60,8 @@ export function createCameraDirector(context: ExperienceContext) {
         Math.cos(angle) * 44,
       );
       look.set(mouseX * 3, 4 - mouseY * 1.5, -3);
-    } else if (name === "lobby") {
+    } else if (name === "lobby" || name === "training") {
+      // Spell practice watches the same arena as the lobby, so each wizard can be seen casting.
       if (isNarrow()) {
         position.set(Math.sin(time * 0.06) * 2, 46, 30);
         look.set(0, -8, -2);
@@ -94,16 +91,6 @@ export function createCameraDirector(context: ExperienceContext) {
         );
         look.set(portal.x + 6, portal.y, portal.z - 4);
       }
-    } else if (name === "training") {
-      world.getPortalFrame(portalPosition, portalNormal);
-      portalTangent.set(portalNormal.z, 0, -portalNormal.x);
-      position
-        .copy(portalPosition)
-        .addScaledVector(portalNormal, isPortrait() ? 26 : 19.5)
-        .addScaledVector(portalTangent, Math.sin(time * 0.06) * 1.2);
-      position.y += isPortrait() ? 4.5 : 3;
-      look.copy(portalPosition).addScaledVector(portalNormal, 5);
-      look.y += isPortrait() ? 1.2 : 0.8;
     }
   }
 

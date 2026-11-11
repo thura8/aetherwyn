@@ -2,7 +2,7 @@
 
 A local-multiplayer wizard duel game. The big screen is the arena; each player's phone is their wand.
 
-**Current step:** the animated title screen — 3D world, menu, lobby, join screen and training — running inside Next.js, plus the phone controller at `/join` (arrival, join and lobby) that players reach by scanning the lobby's QR code.
+**Current step:** the animated title screen — 3D world, menu, lobby and join screen — running inside Next.js, plus the phone controller at `/join` that players reach by scanning the lobby's QR code. Players pick a wizard, then practise Fire and Shield by voice and motion while the big screen shows each wizard casting.
 
 ## Tech stack
 
@@ -39,6 +39,34 @@ Then open http://localhost:3000.
 | `pnpm start` | Run the production build |
 | `pnpm lint` | Check the code with ESLint |
 | `pnpm typecheck` | Check types with TypeScript |
+| `pnpm dev:secure` | Start over HTTPS on your network, for playing on real phones (see below) |
+| `pnpm voice-model` | Put the on-device voice model (~40 MB) in `public/models` |
+
+## Playing on real phones
+
+Phones only allow the motion sensor and the microphone on secure (`https://`) pages, so casting needs `pnpm dev:secure` instead of `pnpm dev`:
+
+1. Stop `pnpm dev` if it's running (they use the same port).
+2. Run `pnpm dev:secure`. The first run creates a small certificate authority in `.certs/` (git-ignored) with `openssl`, and fetches the voice model once.
+3. **Trust the certificate on each phone, once:** open the printed `http://<your-ip>:3080` page on the phone and download the certificate.
+   - **iPhone:** tap *Allow*, then *Settings › General › VPN & Device Management* and install the profile. Then *Settings › General › About › Certificate Trust Settings* and turn on "Aetherwyn Local Development CA".
+   - **Android:** *Settings › Security › More security › Encryption & credentials › Install a certificate › CA certificate*, and pick the downloaded file.
+4. On the computer, open `https://<your-ip>:3000` (trust `.certs/aetherwyn-ca.crt` in Keychain Access, or accept the warning once), open the lobby and scan the QR code.
+
+If the network changes, run `pnpm dev:secure` again: it issues a new certificate, and the phones' trust carries over.
+
+## Casting spells
+
+Hold the circle on the phone, **shout the spell's word and do its move**, then let go. The word picks the spell; doing that spell's own move gives full power. Training practises two spells for now:
+
+| Spell | Shout | Move |
+|---|---|---|
+| Flame Burst | "Fire!" | **Raise:** lift the phone up, like raising a torch |
+| Mystic Shield | "Shield!" | **Shake:** shake the phone two or three times |
+
+- **Motion:** `src/phone/casting/motion/classifyMove.ts`, adapted from the game's classifier, which was tuned on real iPhone recordings.
+- **Voice:** each phone first uses its own speech recognition. If that returns no words (some iPhones), the phone switches to an on-device model (Vosk, about 40 MB, downloaded once and cached). If neither works, casts come from the move alone and are weak.
+- Without a motion sensor (a laptop, or a page that isn't `https`), the phone shows *Raise* and *Shake* buttons to hold instead.
 
 ## Project layout
 

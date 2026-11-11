@@ -156,3 +156,31 @@ export function CheckRune() {
     </svg>
   );
 }
+
+/** A phone outline acting out a move: a raise lifts it up with a rising trail, a shake rattles twice. */
+export function MoveGlyph({
+  move,
+  className,
+}: {
+  move: "raise" | "shake";
+  className?: string;
+}) {
+  return (
+    <svg
+      className={`ph-move ${move}${className ? ` ${className}` : ""}`}
+      viewBox="0 0 64 64"
+      aria-hidden="true"
+    >
+      {move === "raise" ? (
+        <path className="trail" d="M32 60V50M24 58l8-8 8 8" />
+      ) : (
+        <path className="trail" d="M50 18v8M50 38v8M14 18v8M14 38v8" />
+      )}
+      <g className="phone">
+        <rect x="24" y="16" width="16" height="30" rx="3.5" />
+        <rect className="screen" x="27" y="20" width="10" height="20" rx="1" />
+        <circle className="thumb" cx="32" cy="34" r="3" />
+      </g>
+    </svg>
+  );
+}
