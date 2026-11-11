@@ -1,11 +1,13 @@
 /* The darker band across the middle of awt-face is a reflected horizon, which makes the letters read as metal rather than a flat gradient. */
 
-export function TitleWordmark() {
+/** `idPrefix` keeps the SVG's ids unique when the wordmark appears on more than one screen. */
+export function TitleWordmark({ idPrefix = "awt" }: { idPrefix?: string }) {
+  const id = (name: string) => `${idPrefix}-${name}`;
   return (
     <svg viewBox="0 0 1000 200" role="img" aria-label="Aetherwyn">
       <defs>
         <text
-          id="awt-word"
+          id={id("word")}
           x="500"
           y="150"
           textAnchor="middle"
@@ -22,7 +24,7 @@ export function TitleWordmark() {
             N
           </tspan>
         </text>
-        <linearGradient id="awt-face" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={id("face")} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fff7dc" />
           <stop offset="0.28" stopColor="#f7d996" />
           <stop offset="0.5" stopColor="#d9a54c" />
@@ -31,15 +33,15 @@ export function TitleWordmark() {
           <stop offset="0.9" stopColor="#f2cd84" />
           <stop offset="1" stopColor="#fbe3a8" />
         </linearGradient>
-        <linearGradient id="awt-sheen-grad" x1="0" y1="0" x2="1" y2="0">
+        <linearGradient id={id("sheen-grad")} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#fff8e2" stopOpacity="0" />
           <stop offset="0.5" stopColor="#fff8e2" stopOpacity="0.75" />
           <stop offset="1" stopColor="#fff8e2" stopOpacity="0" />
         </linearGradient>
-        <clipPath id="awt-word-clip">
-          <use href="#awt-word" />
+        <clipPath id={id("word-clip")}>
+          <use href={`#${id("word")}`} />
         </clipPath>
-        <filter id="awt-bevel" x="-5%" y="-25%" width="110%" height="150%">
+        <filter id={id("bevel")} x="-5%" y="-25%" width="110%" height="150%">
           <feGaussianBlur in="SourceAlpha" stdDeviation="1.6" result="b" />
           <feSpecularLighting
             in="b"
@@ -54,15 +56,15 @@ export function TitleWordmark() {
           <feComposite in="s" in2="SourceAlpha" operator="in" result="si" />
           <feComposite in="SourceGraphic" in2="si" operator="arithmetic" k2="1" k3="0.65" />
         </filter>
-        <filter id="awt-band-shadow" x="-5%" y="-50%" width="110%" height="200%">
+        <filter id={id("band-shadow")} x="-5%" y="-50%" width="110%" height="200%">
           <feDropShadow dx="0" dy="1.5" stdDeviation="1.2" floodColor="#120a24" floodOpacity="0.9" />
         </filter>
-        <filter id="awt-halo" x="-10%" y="-40%" width="120%" height="180%">
+        <filter id={id("halo")} x="-10%" y="-40%" width="120%" height="180%">
           <feGaussianBlur stdDeviation="7" />
         </filter>
       </defs>
 
-      <g className="title-band" fill="#f3d38c" filter="url(#awt-band-shadow)">
+      <g className="title-band" fill="#f3d38c" filter={`url(#${id("band-shadow")})`}>
         <path d="M206 62.2 H496 L500 61 L504 62.2 H782 V63.8 H504 L500 65 L496 63.8 H206 Z" />
         <path d="M232 56.6 H470 V57.4 H232 Z M530 56.6 H760 V57.4 H530 Z" opacity="0.55" />
         <path d="M206 165.2 H782 V166.8 H206 Z" />
@@ -75,14 +77,14 @@ export function TitleWordmark() {
         <path d="M200 63 l6 -4 l6 4 l-6 4 Z M776 63 l6 -4 l6 4 l-6 4 Z M200 166 l6 -4 l6 4 l-6 4 Z M776 166 l6 -4 l6 4 l-6 4 Z" />
       </g>
 
-      <use href="#awt-word" fill="#0d0720" stroke="#0d0720" strokeWidth="12" strokeLinejoin="round" opacity="0.7" filter="url(#awt-halo)" />
-      <use href="#awt-word" fill="#2a1606" stroke="#2a1606" strokeWidth="6" strokeLinejoin="round" transform="translate(0 3)" />
-      <use href="#awt-word" fill="none" stroke="#e8c47a" strokeWidth="3" strokeLinejoin="round" />
-      <use href="#awt-word" fill="none" stroke="#5a3810" strokeWidth="1.2" strokeLinejoin="round" />
-      <use href="#awt-word" fill="url(#awt-face)" filter="url(#awt-bevel)" />
+      <use href={`#${id("word")}`} fill="#0d0720" stroke="#0d0720" strokeWidth="12" strokeLinejoin="round" opacity="0.7" filter={`url(#${id("halo")})`} />
+      <use href={`#${id("word")}`} fill="#2a1606" stroke="#2a1606" strokeWidth="6" strokeLinejoin="round" transform="translate(0 3)" />
+      <use href={`#${id("word")}`} fill="none" stroke="#e8c47a" strokeWidth="3" strokeLinejoin="round" />
+      <use href={`#${id("word")}`} fill="none" stroke="#5a3810" strokeWidth="1.2" strokeLinejoin="round" />
+      <use href={`#${id("word")}`} fill={`url(#${id("face")})`} filter={`url(#${id("bevel")})`} />
 
-      <g clipPath="url(#awt-word-clip)">
-        <rect className="title-sheen" x="-260" y="0" width="200" height="200" fill="url(#awt-sheen-grad)" transform="skewX(-18)" />
+      <g clipPath={`url(#${id("word-clip")})`}>
+        <rect className="title-sheen" x="-260" y="0" width="200" height="200" fill={`url(#${id("sheen-grad")})`} transform="skewX(-18)" />
       </g>
     </svg>
   );

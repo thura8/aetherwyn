@@ -6,6 +6,7 @@ import JoinScreen from "@/components/JoinScreen";
 import LoadingScreen from "@/components/LoadingScreen";
 import LobbyScreen from "@/components/LobbyScreen";
 import MainMenuScreen from "@/components/MainMenuScreen";
+import ModeSelectScreen from "@/components/ModeSelectScreen";
 import TrainingScreen from "@/components/TrainingScreen";
 import { startExperience } from "@/experience/startExperience";
 
@@ -90,6 +91,7 @@ export default function HomePage() {
       <MainMenuScreen />
       <LobbyScreen />
       <JoinScreen />
+      <ModeSelectScreen />
       <TrainingScreen />
       <div className="toast" id="toast" role="status" aria-live="polite" />
       <LoadingScreen />

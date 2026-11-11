@@ -4,7 +4,10 @@ import type { Lifecycle } from "./lifecycle";
 import type { WizardClassId } from "./world/characters/wizardClasses";
 import type { World } from "./world/createWorld";
 
-export type ScreenName = "title" | "lobby" | "join" | "training";
+export type ScreenName = "title" | "lobby" | "join" | "modes" | "training";
+
+/** The game modes a room can choose on the mode-selection screen (Story Mode is not playable yet). */
+export type GameMode = "training" | "battle";
 
 export interface Player {
   /** The relay's seat id; local-only players get a generated one. */
@@ -26,6 +29,8 @@ export interface Player {
 export interface Room {
   code: string;
   players: (Player | null)[];
+  /** The path chosen on the mode-selection screen; null until one is picked. Kept on the big screen only. */
+  mode: GameMode | null;
 }
 
 export interface ExperienceContext {

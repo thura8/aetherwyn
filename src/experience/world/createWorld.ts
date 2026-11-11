@@ -12,6 +12,7 @@ import { createGlowTexture } from "./canvasTextures";
 import { buildWizards } from "./characters/wizards";
 import { createIslandFactory } from "./islands";
 import { createWaterfallMaterial, createWorldMaterials } from "./materials";
+import { buildPathMotes } from "./pathMotes";
 import { createRenderPipeline } from "./postProcessing";
 import {
   createMarbleTextures,
@@ -33,6 +34,14 @@ interface Point3 {
   x: number;
   y: number;
   z: number;
+}
+
+/** A camera shot to render off-screen, such as a mode card's art. */
+export interface CapturedView {
+  from: Point3;
+  look: Point3;
+  /** Vertical field of view in degrees. */
+  fov: number;
 }
 
 interface CreateWorldOptions {
@@ -219,6 +228,7 @@ export async function createWorld(
     state,
   );
   const wizards = buildWizards(context, arena.arena, arena.circles, state, camera);
+  const pathMotes = buildPathMotes(context, pipeline.getPixelRatio());
 
   const lightFollowTarget = new THREE.Vector3();
   const lightOffset = new THREE.Vector3();
@@ -261,6 +271,7 @@ export async function createWorld(
     updateSkyLife(frame);
     updateMoonLight(frame);
     training.update(frame);
+    pathMotes.update(frame);
   }
 
   function setQuality({
@@ -274,7 +285,10 @@ export async function createWorld(
   }) {
     if (ambientOcclusion != null)
       pipeline.setAmbientOcclusion(ambientOcclusion);
-    if (pixelRatio != null) pipeline.setPixelRatio(pixelRatio);
+    if (pixelRatio != null) {
+      pipeline.setPixelRatio(pixelRatio);
+      pathMotes.setPixelRatio(pixelRatio);
+    }
     if (shadows != null && pipeline.renderer.shadowMap.enabled !== shadows) {
       pipeline.renderer.shadowMap.enabled = shadows;
       moonLight.castShadow = shadows;
@@ -287,6 +301,54 @@ export async function createWorld(
         }
       });
     }
+  }
+
+  const savedCameraPosition = new THREE.Vector3();
+  const savedCameraRotation = new THREE.Quaternion();
+  /**
+   * Renders the world from another shot and copies the centre of the frame into a 2D canvas,
+   * then puts the camera back. Call between frames; the next frame renders the normal view.
+   */
+  function captureView(view: CapturedView, target: HTMLCanvasElement) {
+    const context2d = target.getContext("2d");
+    if (!context2d) return false;
+    savedCameraPosition.copy(camera.position);
+    savedCameraRotation.copy(camera.quaternion);
+    const savedFov = camera.fov;
+    pathMotes.setHidden(true);
+    camera.fov = view.fov;
+    camera.updateProjectionMatrix();
+    camera.position.set(view.from.x, view.from.y, view.from.z);
+    camera.lookAt(view.look.x, view.look.y, view.look.z);
+    camera.updateMatrixWorld();
+    pipeline.composer.render();
+    // Read the canvas in the same task as the render, before the browser presents and clears it.
+    const source = pipeline.renderer.domElement;
+    const targetAspect = target.width / target.height;
+    let cropWidth = source.height * targetAspect;
+    let cropHeight = source.height;
+    if (cropWidth > source.width) {
+      cropWidth = source.width;
+      cropHeight = source.width / targetAspect;
+    }
+    context2d.drawImage(
+      source,
+      (source.width - cropWidth) / 2,
+      (source.height - cropHeight) / 2,
+      cropWidth,
+      cropHeight,
+      0,
+      0,
+      target.width,
+      target.height,
+    );
+    camera.fov = savedFov;
+    camera.updateProjectionMatrix();
+    camera.position.copy(savedCameraPosition);
+    camera.quaternion.copy(savedCameraRotation);
+    camera.updateMatrixWorld();
+    pathMotes.setHidden(false);
+    return true;
   }
 
   function dispose() {
@@ -362,5 +424,7 @@ export async function createWorld(
     setWizardFaded: wizards.setWizardFaded,
     castWizardSpell: wizards.castSpell,
     setWizardCastListener: wizards.setShowOffCastListener,
+    setPathMotesActive: pathMotes.setActive,
+    captureView,
   };
 }

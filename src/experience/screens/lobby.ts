@@ -76,7 +76,13 @@ function pillLabel(player: Player) {
   return player.ready ? "Ready" : "Wand connected";
 }
 
-function beginReason(seated: Player[]) {
+/** The fewest and most wizards a Multiplayer Battle takes. */
+export const BATTLE_MIN_PLAYERS = 2;
+export const BATTLE_MAX_PLAYERS = 4;
+
+function beginReason(seated: Player[], room: Room) {
+  if (room.mode === "battle")
+    return "Multiplayer Battle chosen. The duel arena is still being forged.";
   if (seated.length === 0) return "Waiting for at least one wizard.";
   const lost = seated.find(isWandLost);
   if (lost)
@@ -108,6 +114,8 @@ export function setUpLobby(
   /** The relay's latest room, and who else wants it (the practice board). */
   let latestRelayRoom: RelayRoom | null = null;
   const relayListeners = new Set<(room: RelayRoom) => void>();
+  /** Screens that follow the seated players (the mode-selection cards). */
+  const roomListeners = new Set<(room: Room) => void>();
 
   function renderSlots(room: Room) {
     const list = elementById("slots");
@@ -220,11 +228,19 @@ export function setUpLobby(
     renderSlots(room);
     syncWizards();
     const seated = room.players.filter((player): player is Player => !!player);
-    elementById<HTMLButtonElement>("begin").disabled = seated.length === 0;
-    elementById("begin-reason").textContent = beginReason(seated);
+    const battleChosen = room.mode === "battle";
+    // Multiplayer combat isn't built yet, so a room that chose it waits here with Begin held.
+    elementById("begin-label").textContent = battleChosen
+      ? "Begin battle"
+      : "Choose your path";
+    elementById<HTMLButtonElement>("begin").disabled =
+      battleChosen || seated.length === 0;
+    elementById("change-path").hidden = !battleChosen;
+    elementById("begin-reason").textContent = beginReason(seated, room);
     elementById<HTMLButtonElement>("add-test").disabled = seated.length >= 4;
     if (context.world && context.screen === "lobby")
       context.world.setCirclesLit(room.players.map(Boolean));
+    roomListeners.forEach((listener) => listener(room));
   }
 
   /** Flashes a casting circle in the arena (only while the lobby is on screen). */
@@ -401,7 +417,7 @@ export function setUpLobby(
   screenNavigator.onEnter.lobby = () => {
     if (!context.room) {
       const code = generateRoomCode();
-      context.room = { code, players: [null, null, null, null] };
+      context.room = { code, players: [null, null, null, null], mode: null };
       relayPhase = "lobby";
       void openRelayRoom(code);
       if (context.world) {
@@ -432,10 +448,11 @@ export function setUpLobby(
     } else if (!result.ok) sound.error();
   });
   lifecycle.listen(elementById("begin"), "click", () => {
-    if (live && context.room)
-      void sendRelayAction(context.room.code, { type: "begin" });
-    screenNavigator.goTo("training");
+    if (context.room?.mode !== "battle") screenNavigator.goTo("modes");
   });
+  lifecycle.listen(elementById("change-path"), "click", () =>
+    screenNavigator.goTo("modes"),
+  );
   lifecycle.listen(elementById("close-room"), "click", () => {
     if (context.room) closeRelayRoom(context.room.code);
     context.room = null;
@@ -444,8 +461,34 @@ export function setUpLobby(
     screenNavigator.goTo("title");
   });
 
+  /** Starts spell practice for everyone seated: the phones switch to practice through the relay. */
+  function beginTraining() {
+    const room = context.room;
+    if (!room) return;
+    room.mode = "training";
+    if (live) void sendRelayAction(room.code, { type: "begin" });
+    refreshLobby();
+    screenNavigator.goTo("training");
+  }
+
+  /** Chooses Multiplayer Battle and returns to the lobby, which gathers the wizards for it. */
+  function chooseBattle() {
+    const room = context.room;
+    if (!room) return;
+    room.mode = "battle";
+    refreshLobby();
+    screenNavigator.goTo("lobby");
+  }
+
   return {
     seatPlayer,
+    beginTraining,
+    chooseBattle,
+    /** Follows the room's seats as the lobby refreshes them. */
+    onRoomChanged(listener: (room: Room) => void) {
+      roomListeners.add(listener);
+      return () => roomListeners.delete(listener);
+    },
     /** Follows the room as the relay sends it; called at once with the latest room, if any. */
     onRelayRoom(listener: (room: RelayRoom) => void) {
       relayListeners.add(listener);

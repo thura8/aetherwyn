@@ -6,6 +6,7 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities) source("../");
 @import "../components/loading-screen.css" layer(components);
+@import "../components/mode-select.css" layer(components);
 
 @theme static {
   --color-night: #141a2e;

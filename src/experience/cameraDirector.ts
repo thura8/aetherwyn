@@ -13,6 +13,11 @@ const REDUCED_MOTION_VIEW = {
   look: { x: 0, y: 4, z: -3 },
 };
 
+/** The mode-selection vista (see computeShot). */
+const MODES_RADIUS = 62;
+const MODES_HEIGHT = 24;
+const MODES_LOOK_Y = 16;
+
 const easeInOutCubic = (x: number) =>
   x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 const isNarrow = () => innerWidth <= 760;
@@ -73,6 +78,15 @@ export function createCameraDirector(context: ExperienceContext) {
         );
         look.set(-11, 0, -1);
       }
+    } else if (name === "modes") {
+      // A wide, raised vista over the sky islands: castles frame the cards, the arena sits low behind them.
+      const sway = Math.sin(time * 0.045) * 0.06 + mouseX * 0.05;
+      position.set(
+        Math.sin(sway) * MODES_RADIUS,
+        MODES_HEIGHT + Math.sin(time * 0.11) * 0.8 - mouseY * 2,
+        Math.cos(sway) * MODES_RADIUS,
+      );
+      look.set(mouseX * 4, MODES_LOOK_Y - mouseY * 1.5, -40);
     } else if (name === "join") {
       world.getPortalPosition(look);
       const portal = portalPoint.copy(look);

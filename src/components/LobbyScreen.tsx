@@ -52,12 +52,15 @@ export default function LobbyScreen() {
         <div className="btn-row flex flex-wrap gap-3">
           <MagicButton id="add-test">Add test wizard</MagicButton>
           <MagicButton className="primary" id="begin" disabled>
-            Begin training
+            <span id="begin-label">Choose your path</span>
           </MagicButton>
         </div>
         <p className="min-h-[1.2em] text-[0.95rem] italic" id="begin-reason">
           Waiting for at least one wizard.
         </p>
+        <button className="link-btn" id="change-path" type="button" hidden>
+          Choose another path
+        </button>
         <button className="link-btn" id="join-here" type="button">
           Join from this device instead
         </button>

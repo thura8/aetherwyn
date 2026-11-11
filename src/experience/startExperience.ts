@@ -9,6 +9,7 @@ import { createLifecycle } from "./lifecycle";
 import { createLoadingOverlay } from "./loadingOverlay";
 import { setUpJoinForm } from "./screens/join";
 import { setUpLobby } from "./screens/lobby";
+import { setUpModeSelect } from "./screens/modeSelect";
 import { createScreenNavigator } from "./screens/screenNavigator";
 import { setUpTraining } from "./screens/training";
 import { createWorld } from "./world/createWorld";
@@ -54,9 +55,10 @@ export function startExperience() {
 
   const cameraDirector = createCameraDirector(context);
   const screenNavigator = createScreenNavigator(context, cameraDirector);
-  const { seatPlayer, onRelayRoom } = setUpLobby(context, screenNavigator);
-  setUpJoinForm(context, screenNavigator, seatPlayer);
-  setUpTraining(context, screenNavigator, onRelayRoom);
+  const lobby = setUpLobby(context, screenNavigator);
+  setUpJoinForm(context, screenNavigator, lobby.seatPlayer);
+  setUpModeSelect(context, screenNavigator, lobby);
+  setUpTraining(context, screenNavigator, lobby.onRelayRoom);
   setUpMenuFeedback(context);
   const pollGamepad = setUpKeyboardAndGamepad(context, screenNavigator);
   const loadingOverlay = createLoadingOverlay(context);

@@ -12,6 +12,7 @@ export function createScreenNavigator(
     title: elementById("scr-title"),
     lobby: elementById("scr-lobby"),
     join: elementById("scr-join"),
+    modes: elementById("scr-modes"),
     training: elementById("scr-training"),
   };
   const onEnter: Partial<Record<ScreenName, () => void>> = {
@@ -23,6 +24,8 @@ export function createScreenNavigator(
     },
   };
   const onLeave: Partial<Record<ScreenName, () => void>> = {};
+  /** Runs as soon as the move toward a screen starts, while the veil still covers the view. */
+  const onApproach: Partial<Record<ScreenName, () => void>> = {};
   let isTransitioning = false;
 
   function goTo(name: ScreenName) {
@@ -32,6 +35,7 @@ export function createScreenNavigator(
     if (from === "title") screens.title.classList.remove("play");
     cameraDirector.skipIntroIfRunning();
     onLeave[from]?.();
+    onApproach[name]?.();
     sound.whoosh();
     screens[from].classList.add("out");
     const veil = elementById("veil");
@@ -43,7 +47,8 @@ export function createScreenNavigator(
     if (context.world) cameraDirector.beginMoveToCurrentScreen(context.world);
     context.screen = name;
     document.body.dataset.screen = name;
-    elementById("back").hidden = name === "title";
+    // The mode-selection screen has its own "Return to lobby" button.
+    elementById("back").hidden = name === "title" || name === "modes";
     lifecycle.after(
       () => {
         const screen = screens[name];
@@ -52,7 +57,7 @@ export function createScreenNavigator(
         screen.classList.remove("out");
         onEnter[name]?.();
         const firstControl = screen.querySelector<HTMLElement>(
-          "input, .btn:not(:disabled)",
+          "input, .mode-card:not(:disabled), .btn:not(:disabled)",
         );
         if (firstControl && !device.isCoarsePointer)
           firstControl.focus({ preventScroll: true });
@@ -63,7 +68,10 @@ export function createScreenNavigator(
   }
 
   const backTarget = (): ScreenName =>
-    (context.screen === "training" || context.screen === "join") && context.room
+    (context.screen === "training" ||
+      context.screen === "join" ||
+      context.screen === "modes") &&
+    context.room
       ? "lobby"
       : "title";
 
@@ -78,7 +86,7 @@ export function createScreenNavigator(
   lifecycle.listen(elementById("train"), "click", () => goTo("lobby"));
   lifecycle.listen(elementById("back"), "click", goBack);
 
-  return { screens, onEnter, onLeave, goTo, goBack };
+  return { screens, onEnter, onLeave, onApproach, goTo, goBack };
 }
 
 export type ScreenNavigator = ReturnType<typeof createScreenNavigator>;

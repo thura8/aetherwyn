@@ -22,28 +22,28 @@ export function setUpMenuFeedback(context: ExperienceContext) {
 
   let hoveredButton: HTMLButtonElement | null = null;
   lifecycle.listen<PointerEvent>(document, "pointerover", (event) => {
-    const button = closestButton(event, ".btn, .icon-btn");
+    const button = closestButton(event, ".btn, .icon-btn, .mode-card");
     if (!button || button === hoveredButton || button.disabled) return;
     hoveredButton = button;
     sound.hover();
     reactInWorld(button, true);
   });
   lifecycle.listen<PointerEvent>(document, "pointerout", (event) => {
-    const button = closestButton(event, ".btn, .icon-btn");
+    const button = closestButton(event, ".btn, .icon-btn, .mode-card");
     if (button && !button.contains(event.relatedTarget as Node | null)) {
       if (hoveredButton === button) hoveredButton = null;
       reactInWorld(button, false);
     }
   });
   lifecycle.listen<FocusEvent>(document, "focusin", (event) => {
-    const button = closestButton(event, ".btn");
+    const button = closestButton(event, ".btn, .mode-card");
     if (button && (event.target as Element).matches(":focus-visible")) {
       sound.hover();
       reactInWorld(button, true);
     }
   });
   lifecycle.listen<FocusEvent>(document, "focusout", (event) => {
-    const button = closestButton(event, ".btn");
+    const button = closestButton(event, ".btn, .mode-card");
     if (button) reactInWorld(button, false);
   });
   lifecycle.listen<PointerEvent>(document, "pointerdown", (event) => {
